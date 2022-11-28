@@ -2,6 +2,8 @@ import gym
 from urdfenvs.robots.generic_urdf import GenericUrdfReacher
 import numpy as np
 
+#random comment
+
 def run_point_robot(n_steps=1000, render=False, goal=True, obstacles=True):
     robots = [
         GenericUrdfReacher(urdf="pointRobot.urdf", mode="vel"),
