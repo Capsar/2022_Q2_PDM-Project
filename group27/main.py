@@ -40,18 +40,24 @@ def add_obstacles(env, seed=28, number=20, scale=10.0):
 
 
 def add_goal(env):
+    """
+    Add the goal to the environment!
+    TODO: extend for picking up the block. (Now it is just a position)
+    :param env:
+    :return:
+    """
     from MotionPlanningGoal.staticSubGoal import StaticSubGoal
 
     goal_dict = {
         "weight": 1.0, "is_primary_goal": True, 'indices': [0, 1, 2], 'parent_link': 0, 'child_link': 3,
-        'desired_position': [10, 10, 0.0], 'epsilon': 0.02, 'type': "staticSubGoal",
+        'desired_position': [-5, 5, 0.0], 'epsilon': 0.02, 'type': "staticSubGoal",
     }
 
     goal = StaticSubGoal(name="goal1", content_dict=goal_dict)
     env.add_goal(goal)
 
 
-def sample_config(size=2, scale=12.0):
+def sample_config(size=2, scale=10.0):
     """
     In final version this should be extended to whole observation / configuration space points.
     Currently, it is only a 2D point in the x-y plane. Add a 0 for z (height).
@@ -66,8 +72,10 @@ def is_collision_free(config1, obs_list, robot_radius, config2=None):
     """
     for obs in obs_list:
         if config2 is None and np.linalg.norm(config1 - obs[0]) < obs[1] + robot_radius:
+            # Check if config1 is within an obstacle. (Only when config2 is not defined)
             return False
         if config2 is not None and np.linalg.norm(np.cross(config2 - config1, config1 - obs[0])) / np.linalg.norm(config2 - config1) < obs[1] + robot_radius:
+            # Check if the line between config1 and config2 intersects an obstacle.
             return False
     return True
 
@@ -94,7 +102,10 @@ def steer_towards(from_point, to_point, step_size=0.1):
     return to_point
 
 
-def find_near_nodes(graph, new_config, rrt_radius) -> list[int]:
+def find_near_nodes(graph, new_config, rrt_radius):
+    """
+    Find nodes in graph that are within rrt_radius of new_config.
+    """
     near_nodes = []
     for node in graph.nodes:
         if np.linalg.norm(new_config - graph.nodes[node]['config']) < rrt_radius:
@@ -103,16 +114,22 @@ def find_near_nodes(graph, new_config, rrt_radius) -> list[int]:
 
 
 def calc_cost(config1, graph=None, config2=None):
+    """
+    Calculate the cost of a node or edge.
+    The cost of a node is equal to the length of the path from node 0 to the node.
+    The cost of an edge is equal to the length.
+    """
     try:
         if graph is None:
             return np.linalg.norm(config1 - config2)
         else:
             return nx.shortest_path_length(graph, 0, config1, weight='weight')
     except nx.NetworkXNoPath:
+        # If there is no path from 0 to config1 return infinity.
         return float('inf')
 
 
-def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=5, force_connect=False):
+def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20, force_connect=False):
     """
     Extend the graph towards the sampled point.
     Implemented so far: RRT*
@@ -161,47 +178,56 @@ def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=5, 
         return 'trapped'
 
 
-def rrt_path(robot_config, goal_config, obstacle_configs, seconds=10):
-    graph = DiGraph() # Graph should be directed to figure out parent nodes.
+def rrt_path(robot_config, goal_config, obstacle_configs, graph=None, seconds=0.1, rrt_radius=20):
+    """
+    Extend the graph towards the sampled point.
+    Implemented so far: RRT*
+    Source: DOI: 10.1109/ACCESS.2020.2969316
+    Source paper name: Informed RRT*-Connect: An Asymptotically Optimal Single-Query Path Planning Method
+    """
+    if graph is None:
+        graph = DiGraph()  # Graph should be directed to figure out parent nodes.
     graph.add_node(0, config=robot_config[0])
+
     start_time = time.time()
     while time.time() - start_time < seconds:
         sampled_config = sample_config()
-        status = extend(graph, sampled_config, obstacle_configs, robot_config[1])
-    status = extend(graph, goal_config, obstacle_configs, robot_config[1], force_connect=True)
-    print(graph.nodes)
+        status = extend(graph, sampled_config, obstacle_configs, robot_config[1], rrt_radius=rrt_radius)
+    status = extend(graph, goal_config, obstacle_configs, robot_config[1], rrt_radius=rrt_radius, force_connect=True)
     return graph
 
 
-def add_graph_to_env(graph, radius=0.1, place_height=0.2):
+def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
     """ Add the graph to the environment as objects. """
-
-    # Draw nodes as spheres.
-    for node in graph.nodes:
-        node_color = [0, 0, 1, 1]
-        if node == 0:
-            node_color = [0, 1, 0, 1]
-        if node == -1:
-            node_color = [0, 1, 0, 1]
-            radius = 0.2
-
-        shape_id = p.createVisualShape(p.GEOM_SPHERE, radius=radius, rgbaColor=node_color)
-        p.createMultiBody(
-            baseMass=0,
-            baseCollisionShapeIndex=-1,
-            baseVisualShapeIndex=shape_id,
-            basePosition=[graph.nodes[node]['config'][0], graph.nodes[node]['config'][1], place_height]
-        )
-
-    # Draw edges (Made by google co-pilot)
+    p.removeAllUserDebugItems()
+    # Draw edges
     for edge in graph.edges:
-        p.addUserDebugLine(
+        line_color = [0.2, 0.2, 0.2]
+        line_width = 1
+        if edge[0] in shortest_path and edge[1] in shortest_path:  # If both nodes are in the shortest path make color green.
+            line_color = [0, 1, 0]
+            line_width = 3
+
+        p.addUserDebugLine(  # Got from pybullet documentation
             lineFromXYZ=[graph.nodes[edge[0]]['config'][0], graph.nodes[edge[0]]['config'][1], place_height],
             lineToXYZ=[graph.nodes[edge[1]]['config'][0], graph.nodes[edge[1]]['config'][1], place_height],
-            lineColorRGB=[0.2, 0.2, 0.2],
-            lineWidth=2,
-            lifeTime=0
+            lineColorRGB=line_color,
+            lineWidth=line_width
         )
+
+    # # Draw nodes.
+    # for node in graph.nodes:
+    #     node_color = [0, 0, 1]
+    #     _point_size = point_size
+    #     if node <= 0: # If the node is either the start or end node make it green.
+    #         node_color = [0, 1, 0]
+    #         _point_size = point_size * 2
+    #
+    #     p.addUserDebugPoints(  # Got from pybullet documentation
+    #         pointPositions=[[graph.nodes[node]['config'][0], graph.nodes[node]['config'][1], place_height]],
+    #         pointColorsRGB=[node_color],
+    #         pointSize=_point_size
+    #     )
 
 
 def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
@@ -234,15 +260,17 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
     # Calculate path
     obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
     goal_config = ob['robot_0']['goals'][0][0]
-    robot_config = [np.pad(ob['robot_0']['joint_state']['position'][0:2], (0, 1)), 0.4]  # The 0.8 is the radius of the robot.
+    robot_config = [np.pad(ob['robot_0']['joint_state']['position'][0:2], (0, 1)), 0.2]  # The 0.2 is the radius of the robot.
 
     print('obstacle_configs:', obstacle_configs)
     print('goal_config:', goal_config)
     print('robot_config:', robot_config)
 
-    graph = rrt_path(robot_config, goal_config, obstacle_configs)
+    rrt_radius = 1
+    graph = rrt_path(robot_config, goal_config, obstacle_configs, rrt_radius=rrt_radius)
+    shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
+    add_graph_to_env(graph, shortest_path)
     print(f'Sampled a total of {len(graph.nodes)} nodes in the graph.')
-    add_graph_to_env(graph)
     print(f'Shortest path length: {calc_cost(-1, graph=graph)}')
 
     history = []
@@ -250,6 +278,12 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
         action = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])  # Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
+        graph = rrt_path(robot_config, goal_config, obstacle_configs, graph=graph, rrt_radius=rrt_radius)
+        rrt_radius += 0.1
+        shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
+        add_graph_to_env(graph, shortest_path)
+        print(step, len(graph.nodes), shortest_path)
+
     env.close()
     return history
 
