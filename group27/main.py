@@ -83,7 +83,7 @@ def extend(graph, sampled_point, obs_list):
         graph_node_index = len(graph.nodes)
         graph.add_node(graph_node_index, pos=sampled_point)
         graph.add_edge(nearest_node, graph_node_index)
-        if new_point == sampled_point:
+        if (new_point == sampled_point).all():
             return 'reached'
         else:
             return 'advanced'
@@ -94,15 +94,16 @@ def extend(graph, sampled_point, obs_list):
 def rrt_path(env, ob, start_time=time.time()):
     obs_list = [(np.asarray([obstacle.position()[0], obstacle.position()[1]]), obstacle.radius()) for obstacle in env.get_obstacles().values()]
     robot_pos = [ob['robot_0']['joint_state']['position'][0], ob['robot_0']['joint_state']['position'][1]]
-    goal_pos = [env.get_goals()['goal1'].desired_position[0], env.get_goals()['goal1'].desired_position[1]]
+    # goal_pos = [env.get_goals()['goal1'].desired_position[0], env.get_goals()['goal1'].desired_position[1]]
 
     graph = Graph()
     graph.add_node(0, pos=robot_pos)
-    graph.add_node(1, pos=goal_pos)
+    # graph.add_node(1, pos=goal_pos)
 
-    while time.time() - start_time < 1:
+    while time.time() - start_time < 2:
         sampled_point = sample_point(robot_pos)
         status = extend(graph, sampled_point, obs_list)
+        print(status, len(graph.nodes))
     return nx.shortest_path(graph, 0, 1)
 
 
