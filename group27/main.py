@@ -12,7 +12,7 @@ import networkx as nx
 def add_obstacles(env, seed=28, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
     random.seed(seed)
-    for i in range(30):
+    for i in range(50):
         random_x = random.uniform(-1, 1) * scale
         random_z = random.uniform(-1, 1) * scale
         sphere_obst_dict = {
@@ -22,6 +22,19 @@ def add_obstacles(env, seed=28, scale=10.0):
         }
         sphere_obst = SphereObstacle(name="simpleSphere", content_dict=sphere_obst_dict)
         env.add_obstacle(sphere_obst)
+    # adding a table from which to grap the goal
+    table_height = 1
+    table_length = 2
+    table_width = 1
+    table_size = [table_width, table_length, table_height]
+    table_position = [[1,1,0]]
+    env.add_shapes(shape_type="GEOM_BOX", dim=table_size, mass=100000000, poses_2d=table_position)
+    # adding the box that the robot arm has to pick up
+    box_dim = 0.1
+    box_size = [box_dim for n in range(3)]
+    env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position, place_height=table_height+0.5*box_dim)
+
+
 
 
 def add_goal(env):
@@ -83,7 +96,7 @@ def extend(graph, sampled_point, obs_list):
         graph_node_index = len(graph.nodes)
         graph.add_node(graph_node_index, pos=sampled_point)
         graph.add_edge(nearest_node, graph_node_index)
-        if (new_point == sampled_point).all():
+        if new_point == sampled_point:
             return 'reached'
         else:
             return 'advanced'
@@ -94,16 +107,15 @@ def extend(graph, sampled_point, obs_list):
 def rrt_path(env, ob, start_time=time.time()):
     obs_list = [(np.asarray([obstacle.position()[0], obstacle.position()[1]]), obstacle.radius()) for obstacle in env.get_obstacles().values()]
     robot_pos = [ob['robot_0']['joint_state']['position'][0], ob['robot_0']['joint_state']['position'][1]]
-    # goal_pos = [env.get_goals()['goal1'].desired_position[0], env.get_goals()['goal1'].desired_position[1]]
+    goal_pos = [env.get_goals()['goal1'].desired_position[0], env.get_goals()['goal1'].desired_position[1]]
 
     graph = Graph()
     graph.add_node(0, pos=robot_pos)
-    # graph.add_node(1, pos=goal_pos)
+    graph.add_node(1, pos=goal_pos)
 
-    while time.time() - start_time < 2:
+    while time.time() - start_time < 1:
         sampled_point = sample_point(robot_pos)
         status = extend(graph, sampled_point, obs_list)
-        print(status, len(graph.nodes))
     return nx.shortest_path(graph, 0, 1)
 
 
@@ -121,14 +133,14 @@ def run_albert(n_steps=1000, render=False, goal=True, obstacles=True):
     ob = env.reset(pos=pos0)
     print(f"Initial observation : {ob}")
 
-    # if obstacles:
-    #     add_obstacles(env)
+    if obstacles:
+        add_obstacles(env)
 
     if goal:
         add_goal(env)
 
     ## Calculate path
-    path = rrt_path(env, ob)
+    # path = rrt_path(env, ob)
 
     history = []
     for step in range(n_steps):
@@ -144,3 +156,4 @@ if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
         run_albert(render=True)
+    
