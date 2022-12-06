@@ -16,7 +16,7 @@ from urdfenvs.urdf_common.urdf_env import filter_shape_dim
 def add_obstacles(env, seed=28, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
     random.seed(seed)
-    for i in range(30):
+    for i in range(50):
         random_x = random.uniform(-1, 1) * scale
         random_z = random.uniform(-1, 1) * scale
         sphere_obst_dict = {
@@ -26,6 +26,19 @@ def add_obstacles(env, seed=28, scale=10.0):
         }
         sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
         env.add_obstacle(sphere_obst)
+    # adding a table from which to grap the goal
+    table_height = 1
+    table_length = 2
+    table_width = 1
+    table_size = [table_width, table_length, table_height]
+    table_position = [[1,1,0]]
+    env.add_shapes(shape_type="GEOM_BOX", dim=table_size, mass=100000000, poses_2d=table_position)
+    # adding the box that the robot arm has to pick up
+    box_dim = 0.1
+    box_size = [box_dim for n in range(3)]
+    env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position, place_height=table_height+0.5*box_dim)
+
+
 
 
 def add_goal(env):
