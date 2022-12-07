@@ -129,7 +129,7 @@ def calc_cost(config1, graph=None, config2=None):
         return float('inf')
 
 
-def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20, force_connect=False):
+def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20.0, force_connect=False):
     """
     Extend the graph towards the sampled point.
     Implemented so far: RRT*
@@ -178,15 +178,16 @@ def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20,
         return 'trapped'
 
 
-def rrt_path(robot_config, goal_config, obstacle_configs, graph=None, seconds=0.1, rrt_radius=20):
+def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rrt_radius=20.0):
     """
     Extend the graph towards the sampled point.
     Implemented so far: RRT*
     Source: DOI: 10.1109/ACCESS.2020.2969316
     Source paper name: Informed RRT*-Connect: An Asymptotically Optimal Single-Query Path Planning Method
     """
-    if graph is None:
-        graph = DiGraph()  # Graph should be directed to figure out parent nodes.
+    if seconds < 0.005:
+        return graph
+
     graph.add_node(0, config=robot_config[0])
 
     start_time = time.time()
@@ -266,11 +267,12 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
     print('goal_config:', goal_config)
     print('robot_config:', robot_config)
 
-    rrt_radius = 1
-    graph = rrt_path(robot_config, goal_config, obstacle_configs, rrt_radius=rrt_radius)
+    graph = DiGraph()  # Graph should be directed to figure out parent nodes.
+    start_time = time.time()
+    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=3, rrt_radius=20)
     shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
     add_graph_to_env(graph, shortest_path)
-    print(f'Sampled a total of {len(graph.nodes)} nodes in the graph.')
+    print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time()-start_time, 1)} seconds.')
     print(f'Shortest path length: {calc_cost(-1, graph=graph)}')
 
     history = []
@@ -278,12 +280,6 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
         action = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])  # Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
-        graph = rrt_path(robot_config, goal_config, obstacle_configs, graph=graph, rrt_radius=rrt_radius)
-        rrt_radius += 0.1
-        shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
-        add_graph_to_env(graph, shortest_path)
-        print(step, len(graph.nodes), shortest_path)
-
     env.close()
     return history
 
