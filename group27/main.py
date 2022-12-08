@@ -188,7 +188,8 @@ def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rr
     if seconds < 0.005:
         return graph
 
-    graph.add_node(0, config=robot_config[0])
+    robot_pos_config = np.pad(robot_config[0][0:2], (0, 1)) # (x, y, 0)
+    graph.add_node(0, config=robot_pos_config)
 
     start_time = time.time()
     while time.time() - start_time < seconds:
@@ -231,7 +232,18 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
     #     )
 
 
-def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
+def follow_path(ob, graph, shortest_path):
+    """
+    TODO: Make the robot follow the path.
+    """
+    for i in range(len(shortest_path)-1):
+        u, v = shortest_path[i], shortest_path[i+1]
+        u_config, v_config = graph.nodes[u]['config'], graph.nodes[v]['config']
+
+    return np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+
+def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     robots = [
         AlbertRobot(mode="vel"),
     ]
@@ -259,9 +271,10 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
     print(f"Initial observation : {ob['robot_0']}")  # This now contains the obstacles and goal (env.reset(pos=pos0) did not)
 
     # Calculate path
-    obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
+    robot_config = [ob['robot_0']['joint_state']['position'], 0.2]
     goal_config = ob['robot_0']['goals'][0][0]
-    robot_config = [np.pad(ob['robot_0']['joint_state']['position'][0:2], (0, 1)), 0.2]  # The 0.2 is the radius of the robot.
+    obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
+
 
     print('obstacle_configs:', obstacle_configs)
     print('goal_config:', goal_config)
@@ -269,7 +282,7 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
 
     graph = DiGraph()  # Graph should be directed to figure out parent nodes.
     start_time = time.time()
-    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=3, rrt_radius=20)
+    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=10, rrt_radius=10.0)
     shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
     add_graph_to_env(graph, shortest_path)
     print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time()-start_time, 1)} seconds.')
@@ -277,7 +290,7 @@ def run_albert(n_steps=1000, render=True, goal=True, obstacles=True):
 
     history = []
     for step in range(n_steps):
-        action = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])  # Action space is 9 dimensional
+        action = follow_path(ob, graph, shortest_path)  # Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
     env.close()
