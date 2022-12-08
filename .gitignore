@@ -1,2 +1,4 @@
 /.idea/*
 group27/examples/__pycache__/__init__.cpython-39.pyc
+
+*.pyc
