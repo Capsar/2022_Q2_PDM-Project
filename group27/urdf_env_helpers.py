@@ -1,4 +1,5 @@
-from random import random
+import random
+import pybullet as p
 
 
 def add_obstacles(env, seed=28, number=20, scale=10.0):
