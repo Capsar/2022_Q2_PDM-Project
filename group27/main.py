@@ -58,9 +58,11 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time() - start_time, 1)} seconds.')
     print(f'Shortest path length: {calc_cost(-1, graph=graph)}')
 
+    shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
+
     history = []
     for step in range(n_steps):
-        action = follow_path(ob, graph, shortest_path)  # Action space is 9 dimensional
+        action = follow_path(ob, shortest_path_configs)  # Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
     env.close()
