@@ -42,9 +42,9 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     print(f"Initial observation : {ob['robot_0']}")  # This now contains the obstacles and goal (env.reset(pos=pos0) did not)
 
     # Calculate path
-    robot_config = [ob['robot_0']['joint_state']['position'], 0.2]
-    goal_config = ob['robot_0']['goals'][0][0]
-    obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
+    robot_config = np.asarray([ob['robot_0']['joint_state']['position'], 0.2])
+    goal_config = np.asarray(ob['robot_0']['goals'][0][0])
+    obstacle_configs = np.asarray([obstacle_config for obstacle_config in ob['robot_0']['obstacles']])
 
     print('obstacle_configs:', obstacle_configs)
     print('goal_config:', goal_config)
@@ -52,12 +52,11 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     graph = DiGraph()  # Graph should be directed to figure out parent nodes.
     start_time = time.time()
-    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=3, rrt_radius=6.0)
+    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=10, rrt_radius=10.0)
     shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
     add_graph_to_env(graph, shortest_path)
     print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time() - start_time, 1)} seconds.')
     print(f'Shortest path length: {calc_cost(-1, graph=graph)}')
-
     shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
     print("shortest_path_configs", shortest_path_configs)
 
