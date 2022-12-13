@@ -10,7 +10,7 @@ import gym
 import networkx as nx
 
 from global_path_planning import rrt_path, calc_cost
-from local_path_planning import follow_path, path_smoother
+from local_path_planning import follow_path, path_smoother, PID_follow_path
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 
 
@@ -52,7 +52,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     graph = DiGraph()  # Graph should be directed to figure out parent nodes.
     start_time = time.time()
-    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=3, rrt_radius=10.0)
+    graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=3, rrt_radius=6.0)
     shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
     add_graph_to_env(graph, shortest_path)
     print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time() - start_time, 1)} seconds.')
@@ -67,7 +67,10 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     history = []
     for step in range(n_steps):
-        action = follow_path(ob, shortest_path_configs)  # Action space is 9 dimensional
+        if not history:
+            action = follow_path(ob, shortest_path_configs)  # Action space is 9 dimensional
+        else:
+            action = PID_follow_path(ob, history[-1], shortest_path_configs)  # Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
     env.close()
