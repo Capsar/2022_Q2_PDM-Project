@@ -17,14 +17,23 @@ def is_collision_free(config1, obs_list, robot_radius, config2=None):
     Check if sampled point is collision free with obstacles.
     linalg.norm is the euclidean distance between two points.
     """
-    for obs in obs_list:
-        if config2 is None and np.linalg.norm(config1 - obs[0]) < obs[1] + robot_radius:
-            # Check if config1 is within an obstacle. (Only when config2 is not defined)
-            return False
-        if config2 is not None and np.linalg.norm(np.cross(config2 - config1, config1 - obs[0])) / np.linalg.norm(config2 - config1) < obs[1] + robot_radius:
-            # Check if the line between config1 and config2 intersects an obstacle.
-            return False
+    if config2 is None:
+        for obs in obs_list:
+            diff_config1_robot = config1 - obs[0]
+            if np.linalg.norm(diff_config1_robot) < obs[1] + robot_radius:
+                # Check if config1 is within an obstacle. (Only when config2 is not defined)
+                return False
+    else:
+        diff_config = config2 - config1
+        diff_norm = np.linalg.norm(diff_config)
+        for obs in obs_list:
+            diff_config1_robot = config1 - obs[0]
+            dist2 = np.linalg.norm(np.cross(diff_config, diff_config1_robot)) / diff_norm
+            if dist2 < obs[1] + robot_radius:
+                # Check if the line between config1 and config2 intersects an obstacle.
+                return False
     return True
+
 
 
 def find_nearest_node(graph, sampled_config):
@@ -41,7 +50,7 @@ def find_nearest_node(graph, sampled_config):
     return nearest_node
 
 
-def steer_towards(from_point, to_point, step_size=0.1):
+def steer(from_point, to_point, step_size=0.1):
     """
     Implement motion primitives here.
     To find closest to the to_point.
@@ -85,7 +94,7 @@ def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20.
     """
     nearest_node = find_nearest_node(graph, sampled_config)  # This is a node id (so not a config)
     nearest_node_config = graph.nodes[nearest_node]['config']
-    new_config = steer_towards(nearest_node_config, sampled_config)
+    new_config = steer(nearest_node_config, sampled_config)
     if is_collision_free(new_config, obstacle_configs, robot_radius, config2=nearest_node_config) or force_connect:
         new_node = len(graph.nodes)
         if force_connect:
@@ -139,8 +148,8 @@ def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rr
     graph.add_node(0, config=robot_pos_config, cost=0)
 
     start_time = time.time()
-    # while time.time() - start_time < seconds:
-    while len(graph.nodes) < 150:
+    while time.time() - start_time < seconds:
+    # while len(graph.nodes) < 150:
         sampled_config = sample_config()
         status = extend(graph, sampled_config, obstacle_configs, robot_config[1], rrt_radius=rrt_radius)
 
