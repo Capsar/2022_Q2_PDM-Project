@@ -10,8 +10,8 @@ import gym
 import networkx as nx
 
 from global_path_planning import rrt_path, calc_cost
-from local_path_planning import follow_path
-from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env
+from local_path_planning import follow_path, path_smoother
+from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 
 
 def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
@@ -59,6 +59,11 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     print(f'Shortest path length: {calc_cost(-1, graph=graph)}')
 
     shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
+    print("shortest_path_configs", shortest_path_configs)
+
+    smooth_path_configs = path_smoother(shortest_path_configs)
+    draw_path(smooth_path_configs)
+
 
     history = []
     for step in range(n_steps):

@@ -63,7 +63,15 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
             lineColorRGB=line_color,
             lineWidth=line_width
         )
-
+def draw_path(path, place_height=0.2, line_width=1):
+    line_color = [1,0,0]
+    for i in range(len(path) -1):
+        p.addUserDebugLine(
+            lineFromXYZ=[path[i][0], path[i][1], place_height],
+            lineToXYZ=[path[i+1][0], path[i+1][1], place_height],
+            lineColorRGB=line_color,
+            lineWidth=line_width
+        )
     # # Draw nodes.
     # for node in graph.nodes:
     #     node_color = [0, 0, 1]
