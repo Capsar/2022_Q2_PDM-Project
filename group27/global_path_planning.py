@@ -79,13 +79,13 @@ def calc_cost(config1, graph=None, config2=None):
         if graph is None:
             return np.linalg.norm(config1 - config2)
         else:
-            return nx.shortest_path_length(graph, 0, config1, weight='weight', method='dijkstra')
+            return nx.shortest_path_length(graph, 0, config1, weight='weight')
     except nx.NetworkXNoPath:
         # If there is no path from 0 to config1 return infinity.
         return float('inf')
 
 
-def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20.0, force_connect=False):
+def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=5.0, force_connect=False):
     """
     Extend the graph towards the sampled point.
     Implemented so far: RRT*
@@ -134,7 +134,7 @@ def extend(graph, sampled_config, obstacle_configs, robot_radius, rrt_radius=20.
         return 'trapped'
 
 
-def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rrt_radius=20.0):
+def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rrt_radius=5.0):
     """
     Extend the graph towards the sampled point.
     Implemented so far: RRT*
@@ -145,13 +145,12 @@ def rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=0.1, rr
         return graph
 
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
-    graph.add_node(0, config=robot_pos_config, cost=0)
+    graph.add_node(0, config=robot_pos_config)
 
     start_time = time.time()
     while time.time() - start_time < seconds:
     # while len(graph.nodes) < 150:
         sampled_config = sample_config()
         status = extend(graph, sampled_config, obstacle_configs, robot_config[1], rrt_radius=rrt_radius)
-
     status = extend(graph, goal_config, obstacle_configs, robot_config[1], rrt_radius=rrt_radius, force_connect=True)
     return graph

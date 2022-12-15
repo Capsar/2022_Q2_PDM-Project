@@ -10,8 +10,7 @@ import gym
 import networkx as nx
 
 from global_path_planning import rrt_path, calc_cost
-from local_path_planning import follow_path, path_smoother
-from local_path_planning import interpolate_path
+from local_path_planning import follow_path, path_smoother,interpolate_path, PID_follow_path
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 
 
@@ -63,7 +62,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     print("shortest_path_configs", shortest_path_configs)
     
 
-    interpolated_path_configs = interpolate_path(shortest_path_configs)
+    interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.5)
     smooth_path_configs = path_smoother(interpolated_path_configs)
     draw_path(smooth_path_configs)
 

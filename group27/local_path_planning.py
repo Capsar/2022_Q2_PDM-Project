@@ -39,7 +39,7 @@ def path_smoother(shortest_path_configs):
     for point in shortest_path_configs:
         x.append(point[0])
         y.append(point[1])
-    tck, *rest = interpolate.splprep([x,y], s=0.001)
+    tck, *rest = interpolate.splprep([x,y], s=0.1)
     u = np.linspace(0,1,num=100)
     x_smooth, y_smooth = interpolate.splev(u, tck) 
 
