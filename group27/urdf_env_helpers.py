@@ -1,5 +1,6 @@
 import random
 import pybullet as p
+import math 
 
 
 def add_obstacles(env, seed=28, number=20, scale=10.0):
@@ -28,7 +29,7 @@ def add_obstacles(env, seed=28, number=20, scale=10.0):
     env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position, place_height=table_height + 0.5 * box_dim)
 
 
-def add_goal(env):
+def add_goal(env,table_position,albert_radius=1.0):
     """
     Add the goal to the environment!
     TODO: extend for picking up the block. (Now it is just a position)
@@ -39,7 +40,7 @@ def add_goal(env):
 
     goal_dict = {
         "weight": 1.0, "is_primary_goal": True, 'indices': [0, 1, 2], 'parent_link': 0, 'child_link': 3,
-        'desired_position': [-5, 5, 0.0], 'epsilon': 0.02, 'type': "staticSubGoal",
+        'desired_position': table_position, 'epsilon': albert_radius, 'type': "staticSubGoal",
     }
 
     goal = StaticSubGoal(name="goal1", content_dict=goal_dict)
@@ -63,6 +64,18 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
             lineColorRGB=line_color,
             lineWidth=line_width
         )
+        
+
+def goal_radius(goal_config,albert_radius=1.0,n=50):
+	pi = math.pi
+	
+	for x in range (0,n+1):
+		point =[goal_config[0]+math.cos((2*pi)/(n*x)),goal_config[1]++math.cos((2*pi)/(n*x)),goal_config[2]]
+	
+	
+	
+	
+
 def draw_path(path, place_height=0.2, line_width=1):
     line_color = [1,0,0]
     for i in range(len(path) -1):
