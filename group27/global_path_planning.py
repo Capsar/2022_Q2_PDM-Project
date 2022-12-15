@@ -1,3 +1,4 @@
+import math
 import time
 
 import numpy as np
@@ -10,6 +11,21 @@ def sample_config(size=2, scale=10.0):
     Currently, it is only a 2D point in the x-y plane. Add a 0 for z (height).
     """
     return np.pad(np.random.uniform(-1, 1, size) * scale, (0, 1))
+
+
+def sample_points_in_ellipse(center_config, a, b, ellipse_angle=0.4):
+    center_config_x = center_config[0]
+    center_config_y = center_config[1]
+
+    angle = np.random.uniform(0.0, 2.0*np.pi, 1)[0]
+    random_radius = np.sqrt(np.random.rand())
+    x_e = random_radius * a * math.cos(angle)
+    y_e = random_radius * b * math.sin(angle)
+
+    x = x_e*math.cos(ellipse_angle) - y_e*math.sin(ellipse_angle) + center_config_x
+    y = x_e*math.sin(ellipse_angle) + y_e*math.cos(ellipse_angle) + center_config_y
+
+    return np.asarray([x, y, 0.5])
 
 
 def is_collision_free(config1, obs_list, robot_radius, config2=None):
