@@ -6,6 +6,11 @@ import copy
 def get_robot_config(ob):
     return ob['robot_0']['joint_state']['position']
 
+
+def get_robot_velocity(ob):
+    return ob['robot_0']['joint_state']['forward_velocity'][0]
+
+
 def interpolate_path(path, max_dist=5.0):
     """
     This function interpolates points bet between nodes in case nodes are far apart
@@ -31,7 +36,6 @@ def interpolate_path(path, max_dist=5.0):
     return interpolated_path
 
 
-
 def path_smoother(shortest_path_configs):
     x = []
     y = []
@@ -45,7 +49,6 @@ def path_smoother(shortest_path_configs):
 
     smooth_configs = [np.array([x_smooth[i], y_smooth[i], 0]) for i in range(len(x_smooth))]
     return smooth_configs
-
 
 def follow_path(ob, shortest_path_configs):
     """
@@ -68,41 +71,68 @@ def PID_follow_path(ob, ob_prev, shortest_path_configs):
     """
     PID following path.
     """
+    threshold_diff = 0.1  # threshold for lateral distance, if > 1 Albert can increase speed
+    threshold_angle = 0.2  # threshold for angle difference, if > then increase speed
+    max_speed = 2
+    max_acceleration = 0.01
 
     first_node = shortest_path_configs[0]
+    second_node = shortest_path_configs[1]   # used to calculate lateral distance
     robot_config = get_robot_config(ob)
     prev_robot_config = get_robot_config(ob_prev)
 
+    distance_diff = np.linalg.norm(np.pad(robot_config[0:2], (0, 1)) - first_node)
+
+    # calculate lateral distance to the line, used to decide whether Albert should accelerate or not
+    distance_lat = (abs((second_node[0] - first_node[0]) * (first_node[1] - robot_config[1]) -
+                        (first_node[0] - robot_config[0]) * (second_node[1] - first_node[1]))
+                    / np.sqrt((second_node[0] - first_node[0])**2 + (second_node[1] - first_node[1])**2))
+
     # pop nearest node if the robot is close enough
-    if np.linalg.norm(np.pad(robot_config[0:2], (0, 1)) - first_node) < 0.1:
+    if distance_diff < 0.1:
         shortest_path_configs.pop(0)
 
     # calculate the angle between goal and robot
     angle_between = np.arctan2(first_node[1] - robot_config[1], first_node[0] - robot_config[0])
     angle_diff = angle_between - robot_config[2]
 
+    # calculate previous differences
+    previous_distance_diff = np.linalg.norm(np.pad(prev_robot_config[0:2], (0, 1)) - first_node)
     previous_angle_diff = angle_between - prev_robot_config[2]
 
-    # define PID gains
-    kp = 1.0
-    ki = 0.1
-    kd = 0.01
+    # define PID gains, [velocity gain, angle gain]
+    kp = [.1, 1.0]
+    ki = [0.01, 0.1]
+    kd = [0.001, 0.1]
 
     # initialize errors
-    integral_error = 0.0
-    derivative_error = 0.0
+    integral_error = [0.0, 0.0]
+    derivative_error = [0.0, 0.0]
 
     # update integral error
-    integral_error += angle_diff
+    integral_error[0] += distance_diff
+    integral_error[1] += angle_diff
 
     # update derivative error
-    derivative_error = angle_diff - previous_angle_diff
+    derivative_error[0] = distance_diff - previous_distance_diff
+    derivative_error[1] = angle_diff - previous_angle_diff
 
     # calculate angle action
-    control_angle = kp * angle_diff + ki * integral_error + kd * derivative_error
+    control_angle = kp[1] * angle_diff + ki[1] * integral_error[1] + kd[1] * derivative_error[1]
+
+    control_vel = 0.5
+    if abs(angle_diff) <= threshold_angle:
+        if get_robot_velocity(ob) < max_speed:
+            control_vel = get_robot_velocity(ob) + max_acceleration
+            # print(f"Accelerating...from {get_robot_velocity(ob)} to {control_vel}")
+    else:
+        control_vel = get_robot_velocity(ob) - max_acceleration
+        # print(f"Slowing down...from {get_robot_velocity(ob)} to {control_vel}")
+
+    # print(f"Angle difference: {angle_diff}, Angle control: {control_angle}")
 
     # return action
-    return np.array([0.5, control_angle, 0, 0, 0, 0, 0, 0, 0])
+    return np.array([max(control_vel, 0.5), control_angle, 0, 0, 0, 0, 0, 0, 0])
 
 
 
