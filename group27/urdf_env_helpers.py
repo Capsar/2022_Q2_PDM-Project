@@ -1,6 +1,7 @@
 import random
 import pybullet as p
 import math 
+import numpy as np
 
 
 def add_obstacles(env, seed=28, number=20, scale=10.0):
