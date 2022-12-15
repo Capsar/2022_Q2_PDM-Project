@@ -68,9 +68,13 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
 
 def goal_radius(goal_config,albert_radius=1.0,n=50):
 	pi = math.pi
-	
-	for x in range (0,n+1):
-		point =[goal_config[0]+math.cos((2*pi)/(n*x)),goal_config[1]++math.cos((2*pi)/(n*x)),goal_config[2]]
+	r = albert_radius
+	points =[]
+	for x in range (1,n+1):
+		point =[goal_config[0]+math.cos(2*pi/n*x)*r,goal_config[1]+math.sin(2*pi/n*x)*r,goal_config[2]]
+		points.append(point)
+	points = np.array(points)
+	return points
 	
 	
 	
