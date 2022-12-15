@@ -60,7 +60,6 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
     print("shortest_path_configs", shortest_path_configs)
-    
 
     interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.5)
     smooth_path_configs = path_smoother(interpolated_path_configs)
@@ -69,7 +68,10 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     history = []
     for step in range(n_steps):
-        action = follow_path(ob, shortest_path_configs)  # Action space is 9 dimensional
+        if not history:
+            action = follow_path(ob, smooth_path_configs)  # Action space is 9 dimensional
+        else:
+            action = PID_follow_path(ob, history[-1], smooth_path_configs)
         ob, _, _, _ = env.step(action)
         history.append(ob)
     env.close()
