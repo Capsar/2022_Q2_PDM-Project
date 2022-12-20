@@ -134,6 +134,46 @@ def PID_follow_path(ob, ob_prev, shortest_path_configs):
     # return action
     return np.array([max(control_vel, 0.5), control_angle, 0, 0, 0, 0, 0, 0, 0])
 
+class PID_arm:
+    """
+    PID for arm to follow path
+    """
+    def __init__(self, arm_model, kp = 1.0, ki = 0.1, kd = 0.01):
+        self.arm_model = arm_model
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.errors = [0]
+        self.integral_error = 0.0
+
+
+
+    def PID(self, goal, joint_positions, endpoint_orientation=False):
+        q = joint_positions
+        state = self.arm_model.FK(joint_positions)
+        goal_state = np.vstack((state[:,:9], goal.reshape(-1,1) ))
+
+        error = goal_state - state
+        derivative_error = error - self.errors[-1]
+        self.integral_error += error
+
+        J = self.arm_model.Jacobian(joint_positions)
+
+        endpoint_vel = self.kp * error + self.ki * self.integral_error + self.kd * derivative_error
+
+        joint_vel = np.linalg.pinv(J) @ endpoint_vel 
+
+        return joint_vel
+
+
+
+
+
+
+
+        
+
+
 
 
 

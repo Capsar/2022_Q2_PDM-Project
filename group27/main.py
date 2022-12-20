@@ -12,6 +12,8 @@ import networkx as nx
 from global_path_planning import rrt_path, calc_cost, sample_points_in_ellipse
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_follow_path
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
+from robot_arm_kinematics import Direct_Kinematics
+from arm_kinematics import RobotArmKinematics
 
 
 def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
@@ -43,7 +45,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     # Calculate path
     robot_config = [ob['robot_0']['joint_state']['position'], 0.2]
-    goal_config = ob['robot_0']['goals'][0][0]
+    goal_config = ob['robot_0']['goals'][0][0]  
     obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
 
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
@@ -82,6 +84,10 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
     interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.5)
     smooth_path_configs = path_smoother(interpolated_path_configs)
     draw_path(smooth_path_configs)
+
+    kinematics = RobotArmKinematics()
+    endpoint_xyz = kinematics.FK(robot_config[0][2:], xyz=True)
+    print("Initial endpoint position: ", endpoint_xyz)
 
 
     history = []
