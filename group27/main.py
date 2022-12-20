@@ -9,7 +9,7 @@ import pybullet as p
 import gym
 import networkx as nx
 
-from global_path_planning import rrt_path, calc_cost, sample_points_in_ellipse
+from old_global_path_planning import rrt_path, calc_cost, sample_points_in_ellipse
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_follow_path
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 
