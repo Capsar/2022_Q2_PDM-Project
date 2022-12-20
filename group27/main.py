@@ -57,7 +57,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True):
 
     angle = -np.arctan2(goal_config[0] - robot_pos_config[0], goal_config[1] - robot_pos_config[1])
     for _ in range(1000):
-        sampled_config = sample_points_in_ellipse(center_config, 5, 10, angle)
+        sampled_config = sample_points_in_ellipse(center_config, 5, 20, angle)
         p.addUserDebugPoints(  # Got from pybullet documentation
             pointPositions=[sampled_config],
             pointColorsRGB=[[0, 1, 0]],

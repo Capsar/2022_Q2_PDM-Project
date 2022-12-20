@@ -30,12 +30,10 @@ def add_obstacles(env, seed=28, number=20, scale=10.0):
     env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position, place_height=table_height + 0.5 * box_dim)
 
 
-def add_goal(env,table_position,albert_radius=1.0):
+def add_goal(env, table_position=[-5, 5, 0], albert_radius=1.0):
     """
     Add the goal to the environment!
     TODO: extend for picking up the block. (Now it is just a position)
-    :param env:
-    :return:
     """
     from MotionPlanningGoal.staticSubGoal import StaticSubGoal
 
