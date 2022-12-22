@@ -51,23 +51,21 @@ class RobotArmKinematics:
         Q = Matrix(joint_angles)
         J = A.jacobian(Q)  # compute Jacobian symbolically
 
-        A_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), A, 'numpy'))
-        J_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), J, 'numpy'))
+        self.A_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), A, 'numpy'))
+        self.J_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), J, 'numpy'))
         
-        self.Jacobian = J_lamb
-        self.EE_pose = A_lamb
 
     def FK(self, joint_positions, xyz=True):
         q = joint_positions
-        A = self.EE_pose(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+        A = self.A_lamb(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
         if xyz:
             return A.flatten()[-3:]
         else:
             return A
 
-    def Jacobian(self, joint_positions):
+    def jacobian(self, joint_positions):
         q = joint_positions
-        J = self.Jacobian(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+        J = self.J_lamb.Jacobian(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
         J = J/np.linalg.norm(J)
         return J
     
