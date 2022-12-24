@@ -2,6 +2,7 @@ import random
 import pybullet as p
 import math 
 import numpy as np
+import time
 
 
 def add_obstacles(env, seed=28, number=20, scale=10.0):
@@ -101,3 +102,26 @@ def draw_path(path, place_height=0.2, line_width=1):
     #         pointColorsRGB=[node_color],
     #         pointSize=_point_size
     #     )
+
+
+def transform_camera(dist, yaw, pitch, target, t=3, dt=0.01):
+    """"
+    Transforms the camera from its old position to a given new one
+    within timestamp t and using dt steps
+    """
+    steps = t/dt
+    _, _, _, _, _, _, _,_, old_yaw, old_pitch, old_dist, old_target = p.getDebugVisualizerCamera()
+
+    diff_dist = (dist - old_dist) / steps
+    diff_yaw = (yaw - old_yaw) / steps
+    diff_pitch = (pitch - old_pitch) / steps
+    diff_target = [(target[i] - old_target[i]) / steps for i in range(len(old_target))]
+
+    for i in range(int(steps)):
+        old_dist += diff_dist
+        old_yaw += diff_yaw
+        old_pitch += diff_pitch
+        old_target = [old_target[j] + diff_target[j] for j in range(len(old_target))]
+
+        p.resetDebugVisualizerCamera(cameraDistance=old_dist, cameraYaw=old_yaw, cameraPitch=old_pitch, cameraTargetPosition=old_target)
+        time.sleep(dt)

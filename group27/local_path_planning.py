@@ -108,9 +108,7 @@ class PID_Base:
         # values for printing result
         self.velocities = {
             "velocity": [],
-            "control": [],
-            "goal": [],
-            "diff": []
+            "control": []
         }
         self.angles = {
             "diff": []
@@ -158,8 +156,6 @@ class PID_Base:
             self.derivative_error[0] = 0
 
         control_velocity = error * self.kp[0] + self.integral_error[0] * self.ki[0] + self.derivative_error[0] * self.kd[0]
-        print(f"Control velocity: {control_velocity}")
-        print(f"Control angle: {control_angle}")
 
         control_velocity = np.clip(control_velocity*self.max_velocity, .5, self.max_velocity)
 
@@ -173,6 +169,12 @@ class PID_Base:
         self.ob = ob_current
 
         return np.array([control_velocity, control_angle, 0, 0, 0, 0, 0, 0, 0])
+
+    def return_position(self):
+        robot_config = get_robot_config(self.ob)
+        print(robot_config)
+        return np.pad(robot_config[0:2], (0, 1))  # (x, y, 0)
+
 
     def plot_results(self, save=False):
         # plotting
@@ -204,7 +206,7 @@ class PID_Base:
         plt.show()
 
         if save:
-            fig.savefig(f"plots/{title}.png")
+            fig.savefig(f"plots/full run = {title}.png")
 
 
 class PID_arm:

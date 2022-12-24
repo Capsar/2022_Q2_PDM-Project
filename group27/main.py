@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 
 from global_path_planning import rrt_path, sample_points_in_ellipse
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_Base
-from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
+from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path, transform_camera
 # from robot_arm_kinematics import Direct_Kinematics
 # from arm_kinematics import RobotArmKinematics
 
@@ -49,7 +49,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, albert_r
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     goal_config = ob['robot_0']['goals'][0][0]
     obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
-    #
+
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
     center_config = robot_pos_config + np.subtract(goal_config, robot_pos_config) / 2
     print(center_config)
@@ -89,7 +89,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, albert_r
     #
     # shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
     # shortest_path_configs = [robot_pos_config, [-10, -5, 0], [-5, -5, 0]]
-    shortest_path_configs = [robot_pos_config, [-10, -7, 0], [-7, -7, 0]]
+    shortest_path_configs = [robot_pos_config, [-8, -8, 0], [-7, -7, 0]]
     draw_path(shortest_path_configs)
 
     print("shortest_path_configs", shortest_path_configs)
@@ -102,7 +102,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, albert_r
     # endpoint_xyz = kinematics.FK(robot_config[0][2:], xyz=True)
     # kinematics = RobotArmKinematics()
 
-    base = PID_Base(ob, shortest_path_configs)
+    base = PID_Base(ob, smooth_path_configs)
 
     history = []
     for step in range(n_steps):
@@ -116,9 +116,11 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, albert_r
         history.append(ob)
         if done:
             print("DONE")
-    env.close()
+    # env.close()
 
-    base.plot_results(True)
+    # p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=base.return_position())
+    transform_camera(4, 45, -45, base.return_position())
+    base.plot_results(False)
 
     return history
 
