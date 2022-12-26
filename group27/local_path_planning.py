@@ -172,9 +172,7 @@ class PID_Base:
 
     def return_position(self):
         robot_config = get_robot_config(self.ob)
-        print(robot_config)
         return np.pad(robot_config[0:2], (0, 1))  # (x, y, 0)
-
 
     def plot_results(self, save=False):
         # plotting

@@ -125,3 +125,18 @@ def transform_camera(dist, yaw, pitch, target, t=3, dt=0.01):
 
         p.resetDebugVisualizerCamera(cameraDistance=old_dist, cameraYaw=old_yaw, cameraPitch=old_pitch, cameraTargetPosition=old_target)
         time.sleep(dt)
+
+
+def transform_to_arm(ob, dist=6, pitch=-45):
+    """"
+    Specific transformation function that transforms the camera
+    Takes ob as input
+    """
+
+    goal_target = np.pad(ob['robot_0']['joint_state']['position'][0:2], (0, 1))
+    orientation = math.degrees(ob['robot_0']['joint_state']['position'][2])
+
+    transform_camera(dist, orientation, pitch, goal_target)
+
+
+
