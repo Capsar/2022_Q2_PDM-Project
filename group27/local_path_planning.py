@@ -54,6 +54,7 @@ def path_smoother(shortest_path_configs):
     smooth_configs = [np.array([x_smooth[i], y_smooth[i], 0]) for i in range(len(x_smooth))]
     return smooth_configs
 
+
 def follow_path(ob, shortest_path_configs):
     """
     TODO: Make the robot follow the path.
@@ -70,19 +71,6 @@ def follow_path(ob, shortest_path_configs):
         return np.array([0.5, 2*angle_diff, 0, 0, 0, 0, 0, 0, 0])
     return np.array([0.5, 0, 0, 0, 0, 0, 0, 0, 0])
 
-
-# lists for plotting
-# velocities = {
-#     "velocity": [],
-#     "control": [],
-#     "goal": [],
-#     "diff": []
-# }
-# angles = {
-#     "diff": []
-# }
-# nodes = []
-#
 
 class PID_Base:
     """"
@@ -103,7 +91,7 @@ class PID_Base:
         self.derivative_error = [0., 0.]
 
         self.threshold = 25
-        self.max_velocity = 1.5
+        self.max_velocity = 2
 
         # values for printing result
         self.velocities = {
@@ -219,12 +207,10 @@ class PID_arm:
         self.errors = [0]
         self.integral_error = 0.0
 
-
-
     def PID(self, goal, joint_positions, endpoint_orientation=False):
         q = joint_positions
         state = self.arm_model.FK(joint_positions)
-        goal_state = np.vstack((state[:,:9], goal.reshape(-1,1) ))
+        goal_state = np.vstack((state[:, :9], goal.reshape(-1, 1)))
 
         error = goal_state - state
         derivative_error = error - self.errors[-1]
