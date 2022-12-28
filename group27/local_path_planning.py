@@ -1,6 +1,10 @@
 import numpy as np
 from scipy import interpolate
 import copy
+from matplotlib import pyplot as plt
+import math
+
+import matplotlib
 
 
 def get_robot_config(ob):
@@ -50,6 +54,7 @@ def path_smoother(shortest_path_configs):
     smooth_configs = [np.array([x_smooth[i], y_smooth[i], 0]) for i in range(len(x_smooth))]
     return smooth_configs
 
+
 def follow_path(ob, shortest_path_configs):
     """
     TODO: Make the robot follow the path.
@@ -67,72 +72,128 @@ def follow_path(ob, shortest_path_configs):
     return np.array([0.5, 0, 0, 0, 0, 0, 0, 0, 0])
 
 
-def PID_follow_path(ob, ob_prev, shortest_path_configs):
+class PID_Base:
+    """"
+    PID controller class for our base
     """
-    PID following path.
-    """
-    threshold_diff = 0.1  # threshold for lateral distance, if > 1 Albert can increase speed
-    threshold_angle = 0.2  # threshold for angle difference, if > then increase speed
-    max_speed = 2
-    max_acceleration = 0.01
 
-    first_node = shortest_path_configs[0]
-    second_node = shortest_path_configs[1]   # used to calculate lateral distance
-    robot_config = get_robot_config(ob)
-    prev_robot_config = get_robot_config(ob_prev)
+    def __init__(self, ob, path, kp=(1, 3), ki=(0.0, 0.00), kd=(0, 5)):
+        # initialize the object and path
+        self.ob = ob
+        self.path = path
 
-    distance_diff = np.linalg.norm(np.pad(robot_config[0:2], (0, 1)) - first_node)
+        # controller values (velocity gain, angle gain)
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
 
-    # calculate lateral distance to the line, used to decide whether Albert should accelerate or not
-    distance_lat = (abs((second_node[0] - first_node[0]) * (first_node[1] - robot_config[1]) -
-                        (first_node[0] - robot_config[0]) * (second_node[1] - first_node[1]))
-                    / np.sqrt((second_node[0] - first_node[0])**2 + (second_node[1] - first_node[1])**2))
+        self.integral_error = [0., 0.]
+        self.derivative_error = [0., 0.]
 
-    # pop nearest node if the robot is close enough
-    if distance_diff < 0.1:
-        shortest_path_configs.pop(0)
+        self.threshold = 25
+        self.max_velocity = 2
 
-    # calculate the angle between goal and robot
-    angle_between = np.arctan2(first_node[1] - robot_config[1], first_node[0] - robot_config[0])
-    angle_diff = angle_between - robot_config[2]
+        # values for printing result
+        self.velocities = {
+            "velocity": [],
+            "control": []
+        }
+        self.angles = {
+            "diff": []
+        }
+        self.vertical_lines = []
+        self.angle_control = []
 
-    # calculate previous differences
-    previous_distance_diff = np.linalg.norm(np.pad(prev_robot_config[0:2], (0, 1)) - first_node)
-    previous_angle_diff = angle_between - prev_robot_config[2]
+    def pid_follow_path(self, ob_current):
+        if len(self.path) == 0:
+            return "DONE"
 
-    # define PID gains, [velocity gain, angle gain]
-    kp = [.1, 1.0]
-    ki = [0.01, 0.1]
-    kd = [0.001, 0.1]
+        first_node = self.path[0]
+        robot_config = get_robot_config(ob_current)
+        prev_robot_config = get_robot_config(self.ob)
 
-    # initialize errors
-    integral_error = [0.0, 0.0]
-    derivative_error = [0.0, 0.0]
+        distance_diff = np.linalg.norm(np.pad(robot_config[0:2], (0, 1)) - first_node)
 
-    # update integral error
-    integral_error[0] += distance_diff
-    integral_error[1] += angle_diff
+        # pop nearest node if the robot is close enough
+        if distance_diff < 0.1:
+            self.path.pop(0)
+            self.vertical_lines.append(len(self.angles["diff"]))
 
-    # update derivative error
-    derivative_error[0] = distance_diff - previous_distance_diff
-    derivative_error[1] = angle_diff - previous_angle_diff
+        # calculate the angle between goal and robot
+        angle_between = np.arctan2(first_node[1] - robot_config[1], first_node[0] - robot_config[0])
+        angle_diff = angle_between - robot_config[2]
 
-    # calculate angle action
-    control_angle = kp[1] * angle_diff + ki[1] * integral_error[1] + kd[1] * derivative_error[1]
+        # calculate previous differences
+        previous_angle_diff = angle_between - prev_robot_config[2]
 
-    control_vel = 0.5
-    if abs(angle_diff) <= threshold_angle:
-        if get_robot_velocity(ob) < max_speed:
-            control_vel = get_robot_velocity(ob) + max_acceleration
-            # print(f"Accelerating...from {get_robot_velocity(ob)} to {control_vel}")
-    else:
-        control_vel = get_robot_velocity(ob) - max_acceleration
-        # print(f"Slowing down...from {get_robot_velocity(ob)} to {control_vel}")
+        # update errors for angle
+        self.integral_error[1] += angle_diff
+        self.derivative_error[1] = angle_diff - previous_angle_diff
 
-    # print(f"Angle difference: {angle_diff}, Angle control: {control_angle}")
+        # calculate angle action
+        control_angle = self.kp[1] * angle_diff + self.ki[1] * self.integral_error[1] + self.kd[1] * self.derivative_error[1]
 
-    # return action
-    return np.array([max(control_vel, 0.5), control_angle, 0, 0, 0, 0, 0, 0, 0])
+        # calculate desired velocity based on the angle control
+        error = np.exp(abs(control_angle))**-1
+
+        self.integral_error[0] += error
+        if len(self.angles["diff"]) > 1:
+            # self.derivative_error[0] += error - min(1, 1 - self.angles["diff"][-1])
+            self.derivative_error[0] += error - np.exp(abs(self.angles["diff"][-1]))**-1
+        else:
+            self.derivative_error[0] = 0
+
+        control_velocity = error * self.kp[0] + self.integral_error[0] * self.ki[0] + self.derivative_error[0] * self.kd[0]
+
+        control_velocity = np.clip(control_velocity*self.max_velocity, .5, self.max_velocity)
+
+        self.velocities["control"].append(control_velocity)
+        self.velocities["velocity"].append(get_robot_velocity(ob_current))
+
+        self.angles["diff"].append(abs(angle_diff))
+        self.angle_control.append(control_angle)
+
+        # update self object
+        self.ob = ob_current
+
+        return np.array([control_velocity, control_angle, 0, 0, 0, 0, 0, 0, 0])
+
+    def return_position(self):
+        robot_config = get_robot_config(self.ob)
+        return np.pad(robot_config[0:2], (0, 1))  # (x, y, 0)
+
+    def plot_results(self, save=False):
+        # plotting
+        fig, axs = plt.subplots(3, 1, figsize=(15, 10))
+        i = 0
+        title = f"kp={self.kp}, ki={self.ki}, kd={self.kd}"
+        fig.suptitle(title)
+        x = range(len(self.angles["diff"]))
+
+        axs[0].plot(x, self.velocities["velocity"], label="velocity")
+        axs[0].plot(x, self.velocities["control"], label="control")
+        for vertical_line in self.vertical_lines:
+            axs[0].axvline(x=vertical_line, color="black")
+        axs[0].legend()
+        axs[0].set_title(f"Velocities for kp:{self.kp[0]}, ki:{self.ki[0]}, kd:{self.kd[0]}")
+
+        axs[1].plot(x, self.angle_control, label="Angle control")
+        for vertical_line in self.vertical_lines:
+            axs[1].axvline(x=vertical_line, color="black")
+        axs[1].legend()
+        axs[1].set_title(f"Angle control for: kp={self.kp[1]}, ki={self.ki[1]}, kd={self.kd[1]}")
+
+        axs[2].plot(x, self.angles["diff"], label="Angle difference")
+        axs[2].set_title(f"Angle difference for: kp={self.kp[1]}, ki={self.ki[1]}, kd={self.kd[1]}")
+        for vertical_line in self.vertical_lines:
+            axs[2].axvline(x=vertical_line, color="black")
+        axs[2].legend()
+
+        plt.show()
+
+        if save:
+            fig.savefig(f"plots/full run = {title}.png")
+
 
 class PID_arm:
     """
@@ -146,12 +207,10 @@ class PID_arm:
         self.errors = [0]
         self.integral_error = 0.0
 
-
-
     def PID(self, goal, joint_positions, endpoint_orientation=False):
         q = joint_positions
         state = self.arm_model.FK(joint_positions)
-        goal_state = np.vstack((state[:,:9], goal.reshape(-1,1) ))
+        goal_state = np.vstack((state[:, :9], goal.reshape(-1, 1)))
 
         error = goal_state - state
         derivative_error = error - self.errors[-1]
