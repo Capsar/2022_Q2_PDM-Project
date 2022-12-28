@@ -32,7 +32,7 @@ def add_obstacles(env, seed=28, number=20, scale=10.0):
                    place_height=table_height + 0.5 * box_dim)
 
 
-def add_obstacles_3D(env, location=None, seed=63, number=5, scale=1.0):
+def add_obstacles_3D(env, location=None, seed=63, number=8, scale=1.0):
     """
     Add obstacles in the air for the arm to avoid.
     """
