@@ -103,12 +103,12 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     # endpoint_xyz = kinematics.FK(robot_config[0][2:], xyz=True)
     # kinematics = RobotArmKinematics()
 
-    base = PID_Base(ob, shortest_path_configs)
+    base = PID_Base(ob, smooth_path_configs)
 
     history = []
     for step in range(n_steps):
         if not history:
-            action = follow_path(ob, shortest_path_configs)  # Action space is 9 dimensional
+            action = follow_path(ob, smooth_path_configs)  # Action space is 9 dimensional
         else:
             action = base.pid_follow_path(ob)
             if action == "DONE":
