@@ -51,9 +51,29 @@ class RobotArmKinematics:
 
         self.A_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), A, 'numpy'))
         self.J_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), J, 'numpy'))
+
+        self.joint_limits = [
+            (-2.8973, 2.8973),
+            (-1.7628, 1.7628),
+            (-2.8973, 2.8973),
+            (-3.0718, -0.0698),
+            (-2.8973, 2.8973),
+            (-0.0175, 3.7525),
+            (-2.8973, 2.8973)
+        ]
+        self.max_joint_speed = np.array([
+            [2.1750],
+            [2.1750],
+            [2.1750],
+            [2.1750],
+            [2.6100],
+            [2.6100],
+            [2.6100]
+            ])
+        self.inital_pose = np.array([l+(u-l)/2 for l, u in self.joint_limits], dtype=np.float64)
         
 
-    def FK(self, joint_positions, xyz=True):
+    def FK(self, joint_positions, xyz=False):
         q = joint_positions
         A = self.A_lamb(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
         if xyz:
@@ -63,7 +83,7 @@ class RobotArmKinematics:
 
     def jacobian(self, joint_positions):
         q = joint_positions
-        J = self.J_lamb.Jacobian(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
+        J = self.J_lamb(q[0], q[1], q[2], q[3], q[4], q[5], q[6])
         J = J/np.linalg.norm(J)
         return J
     
