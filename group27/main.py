@@ -1,3 +1,4 @@
+import random
 import time
 import warnings
 import math
@@ -18,7 +19,7 @@ from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_pat
 from arm_kinematics import RobotArmKinematics
 
 
-def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_radius=0.3):
+def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, albert_radius=0.3):
     robots = [
         AlbertRobot(mode="vel"),
     ]
@@ -34,6 +35,9 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     pos0 = np.array([-10.0, -10.0, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0])  # might change later
 
     env.reset(pos=pos0)
+    random.seed(seed)
+    np.random.seed(seed)
+
     if obstacles:
         add_obstacles(env)
     if goal:
@@ -75,15 +79,14 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
 
     start_time = time.time()
     total_nodes = 0
-
     for _ in range(n := 1):
         temp_time = time.time()
         graph = DiGraph()  # Graph should be directed to figure out parent nodes.
-        graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=5, rrt_radius=10)
+        graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=5, rrt_factor=42)
         print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time() - temp_time, 1)} seconds.')
         total_nodes += len(graph.nodes)
     print(f'Average nodes sampled: {round(total_nodes / n, 1)}, in average {round((time.time() - start_time) / n, 1)} seconds.')
-    print(f'Dynamic shortest path length: {graph.nodes[-1]["cost"]} vs Exact shortest path length: {nx.shortest_path_length(graph, 0, -1, weight="weight")}')
+    print(f'Shortest path length: {nx.shortest_path_length(graph, 0, -1, weight="weight")}')
 
     shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
     add_graph_to_env(graph, shortest_path)

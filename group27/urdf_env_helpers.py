@@ -5,9 +5,8 @@ import numpy as np
 import time
 
 
-def add_obstacles(env, seed=28, number=20, scale=10.0):
+def add_obstacles(env, number=20, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
-    random.seed(seed)
     for i in range(number):
         random_x = random.uniform(-1, 1) * scale
         random_z = random.uniform(-1, 1) * scale
@@ -18,6 +17,49 @@ def add_obstacles(env, seed=28, number=20, scale=10.0):
         }
         sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
         env.add_obstacle(sphere_obst)
+
+    for i in range(8):
+        sphere_obst_dict = {
+            "type": "sphere",
+            'movable': False,
+            "geometry": {"position": [-10+i, -6, 0.0], "radius": 0.5},
+        }
+        sphere_obst = SphereObstacle(name=f'obstacle_{-10+i}_{-6}', content_dict=sphere_obst_dict)
+        env.add_obstacle(sphere_obst)
+
+    for i in range(15):
+        sphere_obst_dict = {
+            "type": "sphere",
+            'movable': False,
+            "geometry": {"position": [-5 + i, -2.5, 0.0], "radius": 0.5},
+        }
+        sphere_obst = SphereObstacle(name=f'obstacle_{-5 + i}_{-2.5}', content_dict=sphere_obst_dict)
+        env.add_obstacle(sphere_obst)
+
+        for i in range(7):
+            sphere_obst_dict = {
+                "type": "sphere",
+                'movable': False,
+                "geometry": {"position": [-5, -2.5 + i, 0.0], "radius": 0.5},
+            }
+            sphere_obst = SphereObstacle(name=f'obstacle_{-5}_{-2.5 + i}', content_dict=sphere_obst_dict)
+            env.add_obstacle(sphere_obst)
+
+
+            # Adding walls as obstacles.
+    # wall_length = int(scale*2.5)
+    # for x in range(wall_length):
+    #     for y in range(wall_length):
+    #         if x != 0 and x != wall_length-1 and y != 0 and y != wall_length-1:
+    #             continue
+    #         sphere_obst_dict = {
+    #             "type": "sphere",
+    #             'movable': False,
+    #             "geometry": {"position": [x-int(wall_length/2), y-int(wall_length/2), 0.0], "radius": 0.5},
+    #         }
+    #         sphere_obst = SphereObstacle(name=f'obstacle_{x}_{y}', content_dict=sphere_obst_dict)
+    #         env.add_obstacle(sphere_obst)
+
     # adding a table from which to grab the goal
     table_height = 1
     table_length = 2
@@ -80,8 +122,7 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
     for edge in graph.edges:
         line_color = [0.2, 0.2, 0.2]
         line_width = 1
-        if edge[0] in shortest_path and edge[
-            1] in shortest_path:  # If both nodes are in the shortest path make color green.
+        if edge[0] in shortest_path and edge[1] in shortest_path:  # If both nodes are in the shortest path make color green.
             line_color = [0, 1, 0]
             line_width = 3
 
