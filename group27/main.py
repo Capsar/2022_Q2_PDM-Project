@@ -2,6 +2,7 @@ import random
 import time
 import warnings
 import math
+from copy import deepcopy
 
 from networkx import DiGraph
 from urdfenvs.robots.albert import AlbertRobot
@@ -12,7 +13,7 @@ import gym
 import networkx as nx
 from matplotlib import pyplot as plt
 
-from global_path_planning import rrt_path, sample_points_in_ellipse
+from global_path_planning import RRTStarSmart
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_Base
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path, transform_to_arm, add_obstacles_3D
 # from robot_arm_kinematics import Direct_Kinematics
@@ -81,17 +82,19 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, 
     total_nodes = 0
     for _ in range(n := 1):
         temp_time = time.time()
-        graph = DiGraph()  # Graph should be directed to figure out parent nodes.
-        graph = rrt_path(graph, robot_config, goal_config, obstacle_configs, seconds=5, rrt_factor=42)
-        print(f'Sampled a total of {len(graph.nodes)} nodes in the graph in {round(time.time() - temp_time, 1)} seconds.')
-        total_nodes += len(graph.nodes)
+        rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, obstacle_configs, albert_radius)
+        rrt_star_smart.run(8, rrt_factor=40, init_rrt_star_frac=4, smart_radius=1, smart_frequency=1000)
+        found_graph = deepcopy(rrt_star_smart.graph)
+
+        print(f'Sampled a total of {len(found_graph.nodes)} nodes in the graph in {round(time.time() - temp_time, 1)} seconds.')
+        total_nodes += len(found_graph.nodes)
     print(f'Average nodes sampled: {round(total_nodes / n, 1)}, in average {round((time.time() - start_time) / n, 1)} seconds.')
-    print(f'Shortest path length: {nx.shortest_path_length(graph, 0, -1, weight="weight")}')
+    print(f'Shortest path length: {nx.shortest_path_length(found_graph, 0, -1, weight="weight")}')
 
-    shortest_path = nx.shortest_path(graph, 0, -1, weight='weight')
-    add_graph_to_env(graph, shortest_path)
+    shortest_path = nx.shortest_path(found_graph, 0, -1, weight='weight')
+    add_graph_to_env(found_graph, shortest_path)
 
-    shortest_path_configs = [graph.nodes[node]['config'] for node in shortest_path]
+    shortest_path_configs = [found_graph.nodes[node]['config'] for node in shortest_path]
     # shortest_path_configs = [robot_pos_config, [-10, -5, 0], [-5, -5, 0]]
     # shortest_path_configs = [robot_pos_config, [-9, -10, 0], [-8, -10, 0]]
     draw_path(shortest_path_configs)
