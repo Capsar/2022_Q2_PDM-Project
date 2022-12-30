@@ -211,6 +211,8 @@ class PID_arm:
 
         state = self.arm_model.FK(joint_positions)
 
+        goal_state = np.vstack([np.eye(3).reshape(-1, 1), goal.reshape(-1, 1)])
+
         error = goal_state - state
         derivative_error = error - self.errors[-1]
         self.integral_error += error

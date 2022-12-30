@@ -10,7 +10,7 @@ import gym
 import networkx as nx
 
 from global_path_planning import rrt_path, sample_points_in_ellipse
-from local_path_planning import follow_path, path_smoother,interpolate_path, PID_follow_path, PID_arm
+from local_path_planning import follow_path, path_smoother,interpolate_path, PID_arm
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 from arm_kinematics import RobotArmKinematics
 
