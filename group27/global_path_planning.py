@@ -5,12 +5,13 @@ import numpy as np
 import networkx as nx
 
 
-def sample_config(size=2, scale=10.0):
+def sample_config(domain, scale=1):
     """
     In final version this should be extended to whole observation / configuration space points.
     Currently, it is only a 2D point in the x-y plane. Add a 0 for z (height).
     """
-    return np.pad(np.random.uniform(-1, 1, size) * scale, (0, 1))
+    return np.random.uniform([domain['xmin'], domain['ymin'], domain['zmin']],
+                             [domain['xmax'], domain['ymax'], domain['zmax']], size=3) * scale
 
 
 def distance(diff_config):
@@ -31,18 +32,11 @@ def steer(from_point, to_point, rrt_radius, step_size=0.1):
     return to_point
 
 
-class RRTStarSmart:
+class CollisionManager:
 
-    def __init__(self, start_config, goal_config, obstacle_configs, epsilon, dim='xy'):
-        self.start_config = start_config
-        self.goal_config = goal_config
+    def __init__(self, obstacle_configs, epsilon):
         self.obstacle_configs = obstacle_configs
         self.epsilon = epsilon
-        self.dim = dim
-
-        self.graph = None
-        self.beacon_nodes = None
-        self.start_time = None
 
     def is_in_obstacle(self, config):
         """
@@ -70,6 +64,22 @@ class RRTStarSmart:
                     return False
         return True
 
+
+class RRTStarSmart:
+
+    def __init__(self, start_config, goal_config, collision_manager: CollisionManager, domain):
+        self.start_config = start_config
+        self.goal_config = goal_config
+        self.collision_manager = collision_manager
+        self.domain = domain
+        self.flat = False
+        if self.domain['zmin'] == 0 and self.domain['zmin'] == self.domain['zmax']:
+            self.flat = True
+
+        self.graph = None
+        self.beacon_nodes = None
+        self.start_time = None
+
     def parent(self, node_id):
         """
         Get the parent of a node.
@@ -82,7 +92,19 @@ class RRTStarSmart:
     def sample_biased_config(self, beacon_nodes, smart_radius):
         random_node = np.random.choice(beacon_nodes[1:-1])
         beacon_config = self.node_config(random_node)
-        random_config = sample_config(size=2, scale=smart_radius)
+
+        x_min = max(-1, self.domain['xmin'] - beacon_config[0])
+        x_max = min(1, self.domain['xmax'] - beacon_config[0])
+        y_min = max(-1, self.domain['ymin'] - beacon_config[1])
+        y_max = min(1, self.domain['ymax'] - beacon_config[1])
+
+        if self.flat:
+            random_config = np.pad(np.random.uniform([x_min, y_min], [x_max, y_max], 2) * smart_radius, (0, 1))
+        else:
+            z_min = max(-1, self.domain['zmin'] - beacon_config[2])
+            z_max = min(1, self.domain['zmax'] - beacon_config[2])
+            random_config = np.random.uniform([x_min, y_min, z_min], [x_max, y_max, z_max], 3) * smart_radius
+
         return beacon_config + random_config
 
     def distance_to_start(self, node, start=0):
@@ -127,7 +149,7 @@ class RRTStarSmart:
                 continue
 
             near_node_config = self.node_config(near_node)
-            if self.is_in_line_of_sight(near_node_config, new_config):
+            if self.collision_manager.is_in_line_of_sight(near_node_config, new_config):
                 cost = self.distance_to_start(near_node) + distance(new_config - near_node_config)
                 if cost < min_cost:
                     min_cost = cost
@@ -138,7 +160,7 @@ class RRTStarSmart:
         found = False
         for near_node in near_nodes:
             near_node_config = self.node_config(near_node)
-            if self.is_in_line_of_sight(near_node_config, new_config):
+            if self.collision_manager.is_in_line_of_sight(near_node_config, new_config):
                 cost = self.distance_to_start(new_node) + distance(new_config - near_node_config)
                 if cost < self.distance_to_start(near_node):
                     parent_node = self.parent(near_node)
@@ -156,7 +178,7 @@ class RRTStarSmart:
             for i in range(len(beacon_nodes) - 2):
                 node_0, node_1, node_2 = beacon_nodes[i], beacon_nodes[i + 1], beacon_nodes[i + 2]
                 config_0, config_1, config_2 = self.node_config(node_0), self.node_config(node_1), self.node_config(node_2)
-                if self.is_in_line_of_sight(config_0, config_2):
+                if self.collision_manager.is_in_line_of_sight(config_0, config_2):
                     beacon_nodes.pop(i + 1)
                     found = True
                     break
@@ -169,10 +191,10 @@ class RRTStarSmart:
         nearest_node = self.find_nearest_node(sampled_config)  # This is a node id (so not a config)
         new_config = steer(self.node_config(nearest_node), sampled_config, rrt_radius)
 
-        if self.is_in_obstacle(new_config):
+        if self.collision_manager.is_in_obstacle(new_config):
             return 'trapped'
 
-        if self.is_in_line_of_sight(new_config, self.node_config(nearest_node)):
+        if self.collision_manager.is_in_line_of_sight(new_config, self.node_config(nearest_node)):
             new_node = len(self.graph.nodes)
 
             near_nodes = self.find_near_nodes(new_config, rrt_radius)
@@ -211,7 +233,7 @@ class RRTStarSmart:
                 sampled_config = self.sample_biased_config(beacon_nodes, smart_radius)
                 initial_time += total_duration / smart_frequency
             else:
-                sampled_config = sample_config()
+                sampled_config = sample_config(self.domain)
 
             status = self.step(sampled_config, rrt_radius=rrt_radius)
             if status == 'goal_found':

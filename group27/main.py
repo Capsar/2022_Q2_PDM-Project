@@ -13,7 +13,7 @@ import gym
 import networkx as nx
 from matplotlib import pyplot as plt
 
-from global_path_planning import RRTStarSmart
+from global_path_planning import CollisionManager, RRTStarSmart
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_Base
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path, transform_to_arm, add_obstacles_3D
 # from robot_arm_kinematics import Direct_Kinematics
@@ -55,34 +55,20 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, 
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     goal_config = ob['robot_0']['goals'][0][0]
     obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
-
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
-    center_config = robot_pos_config + np.subtract(goal_config, robot_pos_config) / 2
-    print(center_config)
-    p.addUserDebugPoints(  # Got from pybullet documentation
-                pointPositions=[center_config],
-                pointColorsRGB=[[1, 0, 0]],
-                pointSize=10
-            )
-
-    angle = -np.arctan2(goal_config[0] - robot_pos_config[0], goal_config[1] - robot_pos_config[1])
-    # for _ in range(1000):
-    #     sampled_config = sample_points_in_ellipse(center_config, 5, 20, angle)
-    #     p.addUserDebugPoints(  # Got from pybullet documentation
-    #         pointPositions=[sampled_config],
-    #         pointColorsRGB=[[0, 1, 0]],
-    #         pointSize=5
-    #     )
 
     print('obstacle_configs:', obstacle_configs)
     print('goal_config:', goal_config)
     print('robot_config:', robot_config)
 
+    collision_manager = CollisionManager(obstacle_configs, albert_radius)
+
     start_time = time.time()
     total_nodes = 0
     for _ in range(n := 1):
         temp_time = time.time()
-        rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, obstacle_configs, albert_radius)
+        domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}
+        rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, collision_manager, domain)
         rrt_star_smart.run(8, rrt_factor=40, init_rrt_star_frac=4, smart_radius=1, smart_frequency=1000)
         found_graph = deepcopy(rrt_star_smart.graph)
 

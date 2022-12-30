@@ -115,7 +115,7 @@ def add_goal(env, table_position=[-5, 5, 0], albert_radius=1.0):
     env.add_goal(goal)
 
 
-def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
+def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.005):
     """ Add the graph to the environment as objects. """
     p.removeAllUserDebugItems()
     # Draw edges
@@ -126,9 +126,12 @@ def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.2):
             line_color = [0, 1, 0]
             line_width = 3
 
+        u_config = graph.nodes[edge[0]]['config']
+        v_config = graph.nodes[edge[1]]['config']
+
         p.addUserDebugLine(  # Got from pybullet documentation
-            lineFromXYZ=[graph.nodes[edge[0]]['config'][0], graph.nodes[edge[0]]['config'][1], place_height],
-            lineToXYZ=[graph.nodes[edge[1]]['config'][0], graph.nodes[edge[1]]['config'][1], place_height],
+            lineFromXYZ=[u_config[0], u_config[1], u_config[2]+place_height],
+            lineToXYZ=[v_config[0], v_config[1], v_config[2]+place_height],
             lineColorRGB=line_color,
             lineWidth=line_width
         )
