@@ -22,9 +22,9 @@ def add_obstacles(env, number=20, scale=10.0):
         sphere_obst_dict = {
             "type": "sphere",
             'movable': False,
-            "geometry": {"position": [-10+i, -6, 0.0], "radius": 0.5},
+            "geometry": {"position": [-10 + i, -6, 0.0], "radius": 0.5},
         }
-        sphere_obst = SphereObstacle(name=f'obstacle_{-10+i}_{-6}', content_dict=sphere_obst_dict)
+        sphere_obst = SphereObstacle(name=f'obstacle_{-10 + i}_{-6}', content_dict=sphere_obst_dict)
         env.add_obstacle(sphere_obst)
 
     for i in range(15):
@@ -44,7 +44,6 @@ def add_obstacles(env, number=20, scale=10.0):
             }
             sphere_obst = SphereObstacle(name=f'obstacle_{-5}_{-2.5 + i}', content_dict=sphere_obst_dict)
             env.add_obstacle(sphere_obst)
-
 
             # Adding walls as obstacles.
     # wall_length = int(scale*2.5)
@@ -115,23 +114,30 @@ def add_goal(env, table_position=[-5, 5, 0], albert_radius=1.0):
     env.add_goal(goal)
 
 
-def add_graph_to_env(graph, shortest_path, point_size=5, place_height=0.005):
+def add_graph_to_env(graph, place_height=0.005):
     """ Add the graph to the environment as objects. """
     p.removeAllUserDebugItems()
     # Draw edges
     for edge in graph.edges:
         line_color = [0.2, 0.2, 0.2]
         line_width = 1
-        if edge[0] in shortest_path and edge[1] in shortest_path:  # If both nodes are in the shortest path make color green.
-            line_color = [0, 1, 0]
-            line_width = 3
 
         u_config = graph.nodes[edge[0]]['config']
         v_config = graph.nodes[edge[1]]['config']
 
         p.addUserDebugLine(  # Got from pybullet documentation
-            lineFromXYZ=[u_config[0], u_config[1], u_config[2]+place_height],
-            lineToXYZ=[v_config[0], v_config[1], v_config[2]+place_height],
+            lineFromXYZ=[u_config[0], u_config[1], u_config[2] + place_height],
+            lineToXYZ=[v_config[0], v_config[1], v_config[2] + place_height],
+            lineColorRGB=line_color,
+            lineWidth=line_width
+        )
+
+
+def draw_path(node_configs, line_color=[0, 1, 0], line_width=3, place_height=0.005):
+    for i in range(len(node_configs) - 1):
+        p.addUserDebugLine(
+            lineFromXYZ=[node_configs[i][0], node_configs[i][1], node_configs[i][2] + place_height],
+            lineToXYZ=[node_configs[i+1][0], node_configs[i+1][1], node_configs[i+1][2] + place_height],
             lineColorRGB=line_color,
             lineWidth=line_width
         )
@@ -147,30 +153,6 @@ def goal_radius(goal_config, albert_radius=1.0, n=50):
         points.append(point)
     points = np.array(points)
     return points
-
-
-def draw_path(path, place_height=0.2, line_width=1):
-    line_color = [1, 0, 0]
-    for i in range(len(path) - 1):
-        p.addUserDebugLine(
-            lineFromXYZ=[path[i][0], path[i][1], place_height],
-            lineToXYZ=[path[i + 1][0], path[i + 1][1], place_height],
-            lineColorRGB=line_color,
-            lineWidth=line_width
-        )
-    # # Draw nodes.
-    # for node in graph.nodes:
-    #     node_color = [0, 0, 1]
-    #     _point_size = point_size
-    #     if node <= 0: # If the node is either the start or end node make it green.
-    #         node_color = [0, 1, 0]
-    #         _point_size = point_size * 2
-    #
-    #     p.addUserDebugPoints(  # Got from pybullet documentation
-    #         pointPositions=[[graph.nodes[node]['config'][0], graph.nodes[node]['config'][1], place_height]],
-    #         pointColorsRGB=[node_color],
-    #         pointSize=_point_size
-    #     )
 
 
 def transform_camera(dist, yaw, pitch, target, t=1, dt=0.01):
