@@ -14,11 +14,10 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 from global_path_planning import CollisionManager, RRTStarSmart, path_length
-from local_path_planning import follow_path, path_smoother,interpolate_path, PID_Base
-from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path, transform_to_arm, add_obstacles_3D
+from local_path_planning import follow_path, path_smoother, interpolate_path, PID_Base
+from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, add_obstacles_3D
 # from robot_arm_kinematics import Direct_Kinematics
 from arm_kinematics import RobotArmKinematics
-
 
 def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, albert_radius=0.3):
     robots = [
@@ -64,27 +63,14 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, 
     collision_manager = CollisionManager(obstacle_configs, albert_radius)
     domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}
 
-    start_time = time.time()
-    total_nodes = 0
-    for _ in range(n := 1):
-        temp_time = time.time()
-        rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, collision_manager, domain)
-        rrt_star_smart.smart_run(total_duration=3, rrt_factor=40, smart_sample_ratio=400, smart_radius=1)
-        found_graph = deepcopy(rrt_star_smart.graph)
+    rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, collision_manager, domain, seed=seed)
+    rrt_star_smart.smart_run(total_duration=10, rrt_factor=30, smart_sample_ratio=0.5, smart_radius=1)
+    shortest_path = nx.shortest_path(rrt_star_smart.graph, 0, -1, weight='weight')
+    shortest_path_configs = [rrt_star_smart.graph.nodes[node]['config'] for node in shortest_path]
 
-        print(f'Sampled a total of {len(found_graph.nodes)} nodes in the graph in {round(time.time() - temp_time, 1)} seconds.')
-        total_nodes += len(found_graph.nodes)
-    print(f'Average nodes sampled: {round(total_nodes / n, 1)}, in average {round((time.time() - start_time) / n, 1)} seconds.')
-    print(f'Shortest path length (nx): {nx.shortest_path_length(found_graph, 0, -1, weight="weight")}')
-
-    shortest_path = nx.shortest_path(found_graph, 0, -1, weight='weight')
-    add_graph_to_env(found_graph)
-
-    shortest_path_configs = [found_graph.nodes[node]['config'] for node in shortest_path]
-    # shortest_path_configs = [robot_pos_config, [-10, -5, 0], [-5, -5, 0]]
-    # shortest_path_configs = [robot_pos_config, [-9, -10, 0], [-8, -10, 0]]
+    add_graph_to_env(rrt_star_smart.graph, 0.005)
+    draw_node_configs(rrt_star_smart.biased_sampled_configs, 0.005)
     draw_path(shortest_path_configs, place_height=0.007)
-
     print("Shortest path length: ", path_length(shortest_path_configs))
 
     interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.5)
@@ -97,7 +83,6 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, 
     # kinematics = RobotArmKinematics()
 
     base = PID_Base(ob, smooth_path_configs)
-
     history = []
     for step in range(n_steps):
         if not history:
@@ -112,7 +97,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, seed=42, 
             print("DONE")
 
     transform_to_arm(ob)
-    
+
     # below for robot arm
     # button_position = base.return_position() + np.array([.63, .63, 1])
     # claw_position = base.return_position() + np.array([0.05, 0, 1.4])   # change later!
@@ -165,5 +150,3 @@ if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
         run_albert()
-
-

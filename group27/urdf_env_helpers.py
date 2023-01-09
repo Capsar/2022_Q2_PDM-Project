@@ -133,11 +133,21 @@ def add_graph_to_env(graph, place_height=0.005):
         )
 
 
+def draw_node_configs(node_configs, place_height=0.005, point_size=5):
+    """ Draw the nodes in the graph. """
+    for node_config in node_configs:
+        p.addUserDebugPoints(  # Got from pybullet documentation
+                pointPositions=[[node_config[0], node_config[1], node_config[2]+place_height]],
+                pointColorsRGB=[[1, 0, 1]],
+                pointSize=point_size
+            )
+
+
 def draw_path(node_configs, line_color=[0, 1, 0], line_width=3, place_height=0.005):
     for i in range(len(node_configs) - 1):
         p.addUserDebugLine(
             lineFromXYZ=[node_configs[i][0], node_configs[i][1], node_configs[i][2] + place_height],
-            lineToXYZ=[node_configs[i+1][0], node_configs[i+1][1], node_configs[i+1][2] + place_height],
+            lineToXYZ=[node_configs[i + 1][0], node_configs[i + 1][1], node_configs[i + 1][2] + place_height],
             lineColorRGB=line_color,
             lineWidth=line_width
         )
