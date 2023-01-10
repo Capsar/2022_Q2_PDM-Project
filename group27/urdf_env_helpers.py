@@ -14,58 +14,70 @@ def add_sphere(env, pos, radius):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
     sphere_obst = SphereObstacle(name=f'obstacle_{pos[0]}_{pos[1]}_{pos[2]}', content_dict=sphere_obst_dict)
     env.add_obstacle(sphere_obst)
-def add_obstacles(env, number=20, scale=10.0):
-    from MotionPlanningEnv.sphereObstacle import SphereObstacle
-    # for i in range(number):
-    #     random_x = random.uniform(-1, 1) * scale
-    #     random_z = random.uniform(-1, 1) * scale
-    #     sphere_obst_dict = {
-    #         "type": "sphere",
-    #         'movable': False,
-    #         "geometry": {"position": [random_x, random_z, 0.0], "radius": 0.5},
-    #     }
-    #     sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
-    #     env.add_obstacle(sphere_obst)
 
-    def add_wall(begin_pos, end_pos, horizontal=True, radius=0.5):
+def add_wall(env, begin_pos, end_pos, horizontal=True, radius=0.5):
+    if horizontal:
+        assert begin_pos[1] == end_pos[1]
+    else:
+        assert begin_pos[0] == end_pos[0]
+
+    if horizontal:
+        n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius * 2)).astype(int))
+    else:
+        n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius * 2)).astype(int))
+        print(n_spheres)
+
+    # add obstacles
+    for i in range(n_spheres):
         if horizontal:
-            assert begin_pos[1] == end_pos[1]
+            add_sphere(env, [begin_pos[0] + i, begin_pos[1], 0.0], radius)
         else:
-            assert begin_pos[0] == end_pos[0]
+            add_sphere(env, [begin_pos[0], begin_pos[1] + i, 0.0], radius)
 
-        if horizontal:
-            n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius * 2)).astype(int))
-        else:
-            n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius * 2)).astype(int))
-            print(n_spheres)
+    # add covering wall
+    height = radius
+    if horizontal:
+        width = n_spheres - (radius * 2)
+        length = radius * 2
+        pos = [[(begin_pos[0] + end_pos[0]) / 2 - radius, (begin_pos[1] + end_pos[1]) / 2, 0]]
+    else:
+        width = radius * 2
+        length = n_spheres - (radius * 2)
+        pos = [[(begin_pos[0] + end_pos[0]) / 2, (begin_pos[1] + end_pos[1]) / 2 - radius, 0]]
 
-        # add obstacles
-        for i in range(n_spheres):
-            if horizontal:
-                add_sphere(env, [begin_pos[0] + i, begin_pos[1], 0.0], radius)
-            else:
-                add_sphere(env, [begin_pos[0], begin_pos[1] + i, 0.0], radius)
+    size = [width, length, height]
+    env.add_shapes(shape_type="GEOM_BOX", dim=size, mass=0, poses_2d=pos)
 
-        # add covering wall
-        height = radius
-        if horizontal:
-            width = n_spheres - (radius * 2)
-            length = radius * 2
-            pos = [[(begin_pos[0] + end_pos[0]) / 2 - radius, (begin_pos[1] + end_pos[1]) / 2, 0]]
-        else:
-            width = radius * 2
-            length = n_spheres - (radius * 2)
-            pos = [[(begin_pos[0] + end_pos[0]) / 2, (begin_pos[1] + end_pos[1]) / 2 - radius, 0]]
 
-        size = [width, length, height]
-        env.add_shapes(shape_type="GEOM_BOX", dim=size, mass=0, poses_2d=pos)
+def add_obstacles(env, obstacle_setup, number=20, scale=10.0):
 
-    add_wall([-10, -6], [-2, -6])
-    add_wall([-5, -2.5], [10, -2.5])
-    add_wall([-5, -2.5], [-5, 8.5], False)
-    add_wall([9, -8.5], [9, -1.5], False)
+    if obstacle_setup not in {1, 2, 3, "random"}:
+        print(f"Obstacle setup: {obstacle_setup} is not in the given options [1, 2, 3, 'random']\n"
+              f"No obstacles added. ")
+        return
 
-    add_wall([-2, 5.5], [-2, 12.5], False)
+    if obstacle_setup == 1:
+        add_wall(env, [-10, -6], [-2, -6])
+        add_wall(env, [-5, -2.5], [10, -2.5])
+        add_wall(env, [-5, -2.5], [-5, 8.5], False)
+        add_wall(env, [9, -8.5], [9, -1.5], False)
+        add_wall(env, [-2, 5.5], [-2, 12.5], False)
+    elif obstacle_setup == 2:
+        add_wall(env, [-7, -10], [-7, 8], False)
+        add_wall(env, [-7, 7], [5, 7])
+        add_wall(env, [-2, 3], [5, 3])
+        add_wall(env, [4, -3], [4, 4], False)
+        add_wall(env, [-2, 1], [-2, 4], False)
+    elif obstacle_setup == 3:
+        add_wall(env, [-5, -10], [-5, -7], False)
+        add_wall(env, [-5, -5], [-5, 10], False)
+        add_wall(env, [-5, -5], [-1, -5])
+        add_wall(env, [-2, -2], [11, -2])
+    else:
+        for i in range(number):
+            random_x = random.uniform(-1, 1) * scale
+            random_z = random.uniform(-1, 1) * scale
+            add_sphere(env, [random_x, random_z, 0], 0.5)
 
     # adding a table from which to grab the goal
     table_height = 1

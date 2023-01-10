@@ -19,6 +19,10 @@ from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_nod
     add_sphere
 from arm_kinematics import RobotArmKinematics
 
+# change to 1, 2, 3 or "random" for obstacle setup in environment
+obstacle_setup = 3
+
+
 def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=False, seed=42, albert_radius=0.3):
     robots = [
         AlbertRobot(mode="vel"),
@@ -46,7 +50,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
 
     if not at_end:
         if obstacles:
-            add_obstacles(env)
+            add_obstacles(env, obstacle_setup)
         if goal:
             add_goal(env, table_position=[0, 1, 0], albert_radius=albert_radius)
 
