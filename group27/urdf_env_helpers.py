@@ -70,8 +70,9 @@ def add_obstacles(env, obstacle_setup, number=20, scale=10.0):
         add_wall(env, [-2, 1], [-2, 4], False)
     elif obstacle_setup == 3:
         add_wall(env, [-5, -10], [-5, -7], False)
-        add_wall(env, [-5, -5], [-5, 10], False)
+        add_wall(env, [-5, -5], [-5, 11], False)
         add_wall(env, [-5, -5], [-1, -5])
+        add_wall(env, [-2, -7], [-2, -4], False)
         add_wall(env, [-2, -2], [11, -2])
     else:
         for i in range(number):
