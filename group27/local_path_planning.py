@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import math
 
 import matplotlib
+from transforms import rotate_X, rotate_Y, rotate_Z
 
 
 def get_robot_config(ob):
@@ -214,7 +215,12 @@ class PID_arm:
         if endpoint_orientation:
             goal_state = np.vstack([state[:9], goal.reshape(-1,1)])
         else:
-            goal_state = np.vstack([np.eye(3).reshape(-1, 1), goal.reshape(-1, 1)])
+            # orientation =np.eye(3) @ rotate_Y(np.pi/2) @ rotate_X(np.pi)
+            angle = np.arctan(goal[1]/goal[0])
+            orientation = np.array([[0, -np.cos(angle), np.sin(angle)],
+                                    [0, np.sin(angle), np.cos(angle)],
+                                    [-1, 0, 0]]) #@ rotate_Y(np.pi)
+            goal_state = np.vstack([orientation.reshape(-1, 1), goal.reshape(-1, 1)])
 
         error = goal_state - state
         derivative_error = error - self.errors[-1]
