@@ -31,7 +31,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     kinematics = RobotArmKinematics()
 
     # Init environment (robot position, obstacles, goals)
-    pos0 = np.hstack((np.zeros(2)*-2.0, kinematics.inital_pose))
+    pos0 = np.hstack((np.zeros(3), kinematics.inital_pose))
     env.reset(pos=pos0)
     if goal:
         add_goal(env, albert_radius=albert_radius)
@@ -52,21 +52,21 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     print('robot_config:', robot_config)
 
 
-    endpoint_xyz = kinematics.FK(robot_config[0][3:], xyz=True)
+    endpoint_xyz = kinematics.FK(robot_config[0][3:], xyz=False)
     print("Initial endpoint position: ", endpoint_xyz)
     jacobian = kinematics.jacobian(robot_config[0][3:])
     print("Initial jacobian: ", jacobian) 
 
 
     arm_controller = PID_arm(kinematics)
-    arm_goal = np.array([0.3, 0.4, 1.2])
+    arm_goal = np.array([-0.5, 0.5, 1.4
+                         ])
+
 
 
 
 
     
-
-
     history = []
     for step in range(n_steps):
         joint_positions = ob['robot_0']['joint_state']['position'][3:]
@@ -77,7 +77,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
                         pointColorsRGB = [[1,0,1]],
                         pointSize = 10)
 
-        joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=True)
+        joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=False)
         action = np.hstack((np.zeros(2), joint_vel)) #Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
