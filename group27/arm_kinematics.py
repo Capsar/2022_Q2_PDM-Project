@@ -84,9 +84,9 @@ class RobotArmKinematics:
     def Endpoint_world_frame(self, robot_config):
         joint_positions = robot_config[0][3:]
         endpoint_arm_frame = self.FK(joint_positions, xyz=True)
-        arm_mount_base_link_frame = np.array([-0.15, 0.0, 0.48])
+        arm_mount_base_link_frame = np.array([-0.15, 0.0, 0.487])
         enpoint_base_link_frame = endpoint_arm_frame + arm_mount_base_link_frame
-        base_position = np.zeros(3)
+        base_position = [0, 0, 0.13]
         base_position[:2] = robot_config[0][:2]
         base_rotation = robot_config[0][2]
         base_rotation_matrix = np.array([[np.cos(base_rotation), -np.sin(base_rotation), 0],

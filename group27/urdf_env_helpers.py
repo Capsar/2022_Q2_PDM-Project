@@ -5,6 +5,15 @@ import numpy as np
 import time
 
 
+def add_sphere(env, pos, radius):
+    sphere_obst_dict = {
+        "type": "sphere",
+        'movable': False,
+        "geometry": {"position": pos, "radius": radius},
+    }
+    from MotionPlanningEnv.sphereObstacle import SphereObstacle
+    sphere_obst = SphereObstacle(name=f'obstacle_{pos[0]}_{pos[1]}_{pos[2]}', content_dict=sphere_obst_dict)
+    env.add_obstacle(sphere_obst)
 def add_obstacles(env, number=20, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
     # for i in range(number):
@@ -33,24 +42,9 @@ def add_obstacles(env, number=20, scale=10.0):
         # add obstacles
         for i in range(n_spheres):
             if horizontal:
-                sphere_obst_dict = {
-                    "type": "sphere",
-                    'movable': False,
-                    "geometry": {"position": [begin_pos[0] + i, begin_pos[1], 0.0], "radius": radius},
-                }
-                sphere_obst = SphereObstacle(name=f'obstacle_{begin_pos[0] + i}_{begin_pos[1]}',
-                                             content_dict=sphere_obst_dict)
-                env.add_obstacle(sphere_obst)
-
+                add_sphere(env, [begin_pos[0] + i, begin_pos[1], 0.0], radius)
             else:
-                sphere_obst_dict = {
-                    "type": "sphere",
-                    'movable': False,
-                    "geometry": {"position": [begin_pos[0], begin_pos[1] + i, 0.0], "radius": radius},
-                }
-                sphere_obst = SphereObstacle(name=f'obstacle_{begin_pos[0]}_{begin_pos[1] + i}',
-                                             content_dict=sphere_obst_dict)
-                env.add_obstacle(sphere_obst)
+                add_sphere(env, [begin_pos[0], begin_pos[1] + i, 0.0], radius)
 
         # add covering wall
         height = radius
