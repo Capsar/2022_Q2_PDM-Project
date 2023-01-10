@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def get_T_world_robot(robot_config):
     base_rotation = robot_config[0][2]
     base_x, base_y = robot_config[0][:2]
@@ -11,8 +12,8 @@ def get_T_world_robot(robot_config):
                                      [0, 0, 1]])
     translation = base_pos + base_rotation_matrix @ arm_mount_base_link_frame
 
-    T_matrix = np.hstack((base_rotation_matrix, -translation[:,np.newaxis]))
-    T_matrix = np.vstack((T_matrix, np.array([0,0,0,1])))
+    T_matrix = np.hstack((base_rotation_matrix, -translation[:, np.newaxis]))
+    T_matrix = np.vstack((T_matrix, np.array([0, 0, 0, 1])))
     return T_matrix
 
 def T_robot_world(xyz_world, robot_config): # from world to robot

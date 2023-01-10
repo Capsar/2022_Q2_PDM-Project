@@ -81,17 +81,17 @@ def add_obstacles(env, obstacle_setup, number=20, scale=10.0):
             add_sphere(env, [random_x, random_z, 0], 0.5)
 
     # adding a table from which to grab the goal
-    table_height = 1
-    table_length = 2
-    table_width = 1
-    table_size = [table_width, table_length, table_height]
-    table_position = [[1, 1, 0]]
-    env.add_shapes(shape_type="GEOM_BOX", dim=table_size, mass=100000000, poses_2d=table_position)
-    # adding the box that the robot arm has to pick up
-    box_dim = 0.1
-    box_size = [box_dim for n in range(3)]
-    env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position,
-                   place_height=table_height + 0.5 * box_dim)
+    # table_height = 1
+    # table_length = 2
+    # table_width = 1
+    # table_size = [table_width, table_length, table_height]
+    # table_position = [[1, 1, 0]]
+    # env.add_shapes(shape_type="GEOM_BOX", dim=table_size, mass=100000000, poses_2d=table_position)
+    # # adding the box that the robot arm has to pick up
+    # box_dim = 0.1
+    # box_size = [box_dim for n in range(3)]
+    # env.add_shapes(shape_type="GEOM_BOX", dim=box_size, mass=10, poses_2d=table_position,
+    #                place_height=table_height + 0.5 * box_dim)
 
 
 def add_obstacles_3D(env, location=None, seed=63, number=8, scale=1.0):
@@ -137,7 +137,6 @@ def add_goal(env, table_position=[-5, 5, 0], albert_radius=1.0):
 
 def add_graph_to_env(graph, place_height=0.005):
     """ Add the graph to the environment as objects. """
-    p.removeAllUserDebugItems()
     # Draw edges
     for edge in graph.edges:
         line_color = [0.2, 0.2, 0.2]
