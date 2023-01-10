@@ -202,6 +202,9 @@ class RRTStarSmart(RRTStar):
         self.biased_sampled_configs = []
 
     def sample_biased_config(self, beacon_nodes, smart_radius):
+        if len(beacon_nodes) <= 2:
+            return self.sample_config(self.domain)
+
         random_node = np.random.choice(beacon_nodes[1:-1])
         beacon_config = self.node_config(random_node)
         domain = {

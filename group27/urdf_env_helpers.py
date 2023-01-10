@@ -25,9 +25,9 @@ def add_obstacles(env, number=20, scale=10.0):
             assert begin_pos[0] == end_pos[0]
 
         if horizontal:
-            n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius*2)).astype(int))
+            n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius * 2)).astype(int))
         else:
-            n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius*2)).astype(int))
+            n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius * 2)).astype(int))
             print(n_spheres)
 
         # add obstacles
@@ -57,7 +57,7 @@ def add_obstacles(env, number=20, scale=10.0):
         if horizontal:
             width = n_spheres - (radius * 2)
             length = radius * 2
-            pos = [[(begin_pos[0]+end_pos[0])/2 - radius, (begin_pos[1]+end_pos[1])/2, 0]]
+            pos = [[(begin_pos[0] + end_pos[0]) / 2 - radius, (begin_pos[1] + end_pos[1]) / 2, 0]]
         else:
             width = radius * 2
             length = n_spheres - (radius * 2)
@@ -146,7 +146,8 @@ def add_graph_to_env(graph, place_height=0.005):
             lineWidth=line_width
         )
 
-def draw_domain(domain, line_color=[0,0,0], line_width=1):
+
+def draw_domain(domain, line_color=[0, 0, 0], line_width=1, place_height=0):
     path = [[domain['xmin'], domain['ymin'], domain['zmin']], [domain['xmin'], domain['ymax'], domain['zmin']],
             [domain['xmax'], domain['ymax'], domain['zmin']], [domain['xmax'], domain['ymin'], domain['zmin']],
             [domain['xmin'], domain['ymin'], domain['zmin']], [domain['xmin'], domain['ymin'], domain['zmax']],
@@ -156,17 +157,17 @@ def draw_domain(domain, line_color=[0,0,0], line_width=1):
             [domain['xmax'], domain['ymin'], domain['zmax']], [domain['xmax'], domain['ymin'], domain['zmin']],
             [domain['xmax'], domain['ymin'], domain['zmax']], [domain['xmin'], domain['ymin'], domain['zmax']],
             [domain['xmin'], domain['ymin'], domain['zmax']]]
-    draw_path(path, line_color=line_color, line_width=line_width, place_height=0)
+    draw_path(path, line_color=line_color, line_width=line_width, place_height=place_height)
 
 
 def draw_node_configs(node_configs, place_height=0.005, point_size=5):
     """ Draw the nodes in the graph. """
     for node_config in node_configs:
         p.addUserDebugPoints(  # Got from pybullet documentation
-                pointPositions=[[node_config[0], node_config[1], node_config[2]+place_height]],
-                pointColorsRGB=[[1, 0, 1]],
-                pointSize=point_size
-            )
+            pointPositions=[[node_config[0], node_config[1], node_config[2] + place_height]],
+            pointColorsRGB=[[1, 0, 1]],
+            pointSize=point_size
+        )
 
 
 def draw_path(node_configs, line_color=[0, 1, 0], line_width=3, place_height=0.005):
