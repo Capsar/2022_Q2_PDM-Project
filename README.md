@@ -1,7 +1,7 @@
 ### <div align='center'> Planning & Decision Making - RO47005 <br/> 16-01-2023 </div>
 
 # <div align='center'> 2022_Q2_PDM-Project </div>
-### <div align='center'>Project about global and local path planning through an environment with obstacles. </div>
+#### <div align='center'><i>Project about global and local path planning through an environment with obstacles. </i></div>
 
 ### <div align ='center'> Group 027:</div>
 #### <div align='center'>Annelouk van Mierlo: 4693746 </br> Caspar Meijer: 4719298 </br> Jurjen Scharringa: 4708652 </br> Marijn de Rijk: 4888871 </div>
