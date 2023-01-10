@@ -49,8 +49,8 @@ class RobotArmKinematics:
         Q = Matrix(joint_angles)
         J = A.jacobian(Q)  # compute Jacobian symbolically
 
-        self.A_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), A, 'numpy'))
-        self.J_lamb = jit(lambdify((q1, q2, q3, q4, q5, q6, q7), J, 'numpy'))
+        self.A_lamb = (lambdify((q1, q2, q3, q4, q5, q6, q7), A, 'numpy'))
+        self.J_lamb = (lambdify((q1, q2, q3, q4, q5, q6, q7), J, 'numpy'))
 
         self.joint_limits = [
             (-2.8973, 2.8973),
