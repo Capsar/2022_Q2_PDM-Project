@@ -199,7 +199,7 @@ class PID_arm:
     """
     PID for arm to follow path
     """
-    def __init__(self, arm_model, kp = 0.10, ki = 0.0, kd = 0.00):
+    def __init__(self, arm_model, kp = 0.40, ki = 0.0, kd = 0.00):
         self.arm_model = arm_model
         self.kp = kp
         self.ki = ki
@@ -224,12 +224,10 @@ class PID_arm:
 
         endpoint_vel = self.kp * error + self.ki * self.integral_error + self.kd * derivative_error
 
-        print("desired enpoint velocity :", endpoint_vel)
 
 
         joint_vel = np.linalg.pinv(J) @ endpoint_vel 
         joint_vel = np.clip(joint_vel, -self.arm_model.max_joint_speed, self.arm_model.max_joint_speed)
-        print("calculated velocities :", joint_vel)
 
         return joint_vel.flatten()
 

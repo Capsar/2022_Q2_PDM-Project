@@ -9,6 +9,7 @@ import pybullet as p
 import gym
 import networkx as nx
 
+from transforms import get_T_world_robot, T_robot_world, T_world_robot
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_arm
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 from arm_kinematics import RobotArmKinematics
@@ -58,7 +59,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
 
 
     arm_controller = PID_arm(kinematics)
-    arm_goal = np.array([-0.5, -0.5, 0.2])
+    arm_goal = np.array([0.3, 0.4, 1.2])
 
 
 
@@ -69,7 +70,14 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     history = []
     for step in range(n_steps):
         joint_positions = ob['robot_0']['joint_state']['position'][3:]
-        joint_vel = arm_controller.PID(arm_goal, joint_positions, endpoint_orientation=True)
+        robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
+        arm_goal_robot_frame = T_robot_world(arm_goal, robot_config)
+
+        p.addUserDebugPoints(pointPositions=[arm_goal],
+                        pointColorsRGB = [[1,0,1]],
+                        pointSize = 10)
+
+        joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=True)
         action = np.hstack((np.zeros(2), joint_vel)) #Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)
