@@ -21,7 +21,7 @@ class RobotArmKinematics:
             {'a':  0.0825, 'd': 0,     'alpha':  pi/2},
             {'a': -0.0825, 'd': 0.384, 'alpha': -pi/2},
             {'a':  0,      'd': 0,     'alpha':  pi/2},
-            {'a':  0.088,  'd': 0.107, 'alpha':  pi/2},
+            {'a':  0.088,  'd': 0.187, 'alpha':  pi/2},
         ]
 
         DK = eye(4)
@@ -84,9 +84,9 @@ class RobotArmKinematics:
     def Endpoint_world_frame(self, robot_config):
         joint_positions = robot_config[0][3:]
         endpoint_arm_frame = self.FK(joint_positions, xyz=True)
-        arm_mount_base_link_frame = np.array([-0.15, 0.0, 0.487])
+        arm_mount_base_link_frame = np.array([-0.15, 0.0, 0.48])
         enpoint_base_link_frame = endpoint_arm_frame + arm_mount_base_link_frame
-        base_position = [0, 0, 0.13]
+        base_position = np.zeros(3)
         base_position[:2] = robot_config[0][:2]
         base_rotation = robot_config[0][2]
         base_rotation_matrix = np.array([[np.cos(base_rotation), -np.sin(base_rotation), 0],
@@ -95,6 +95,8 @@ class RobotArmKinematics:
         endpoint_world_frame = base_position + base_rotation_matrix @ enpoint_base_link_frame
         arm_mount_world_frame = base_position + base_rotation_matrix @ arm_mount_base_link_frame
         return endpoint_world_frame, arm_mount_world_frame
+
+
 
     def jacobian(self, joint_positions):
         q = joint_positions
