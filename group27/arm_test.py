@@ -9,8 +9,7 @@ import pybullet as p
 import gym
 import networkx as nx
 
-from global_path_planning import rrt_path, sample_points_in_ellipse
-from local_path_planning import follow_path, path_smoother,interpolate_path, PID_follow_path, PID_arm
+from local_path_planning import follow_path, path_smoother,interpolate_path, PID_arm
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 from arm_kinematics import RobotArmKinematics
 
@@ -33,8 +32,6 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     # Init environment (robot position, obstacles, goals)
     pos0 = np.hstack((np.zeros(2)*-2.0, kinematics.inital_pose))
     env.reset(pos=pos0)
-    if obstacles:
-        add_obstacles(env)
     if goal:
         add_goal(env, albert_radius=albert_radius)
 
@@ -61,7 +58,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
 
 
     arm_controller = PID_arm(kinematics)
-    arm_goal = np.array([0.2, 0.2, 0.2])
+    arm_goal = np.array([-0.5, -0.5, 0.2])
 
 
 
@@ -72,7 +69,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     history = []
     for step in range(n_steps):
         joint_positions = ob['robot_0']['joint_state']['position'][3:]
-        joint_vel = arm_controller.PID(arm_goal, joint_positions)
+        joint_vel = arm_controller.PID(arm_goal, joint_positions, endpoint_orientation=True)
         action = np.hstack((np.zeros(2), joint_vel)) #Action space is 9 dimensional
         ob, _, _, _ = env.step(action)
         history.append(ob)

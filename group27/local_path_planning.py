@@ -91,7 +91,7 @@ class PID_Base:
         self.derivative_error = [0., 0.]
 
         self.threshold = 25
-        self.max_velocity = 2
+        self.max_velocity = 1.5
 
         # values for printing result
         self.velocities = {
@@ -145,7 +145,7 @@ class PID_Base:
 
         control_velocity = error * self.kp[0] + self.integral_error[0] * self.ki[0] + self.derivative_error[0] * self.kd[0]
 
-        control_velocity = np.clip(control_velocity*self.max_velocity, .5, self.max_velocity)
+        control_velocity = np.clip(control_velocity*self.max_velocity, .0, self.max_velocity)
 
         self.velocities["control"].append(control_velocity)
         self.velocities["velocity"].append(get_robot_velocity(ob_current))
@@ -210,6 +210,11 @@ class PID_arm:
     def PID(self, goal, joint_positions, endpoint_orientation=False):
 
         state = self.arm_model.FK(joint_positions)
+
+        if endpoint_orientation:
+            goal_state = np.vstack([state[:9], goal.reshape(-1,1)])
+        else:
+            goal_state = np.vstack([np.eye(3).reshape(-1, 1), goal.reshape(-1, 1)])
 
         error = goal_state - state
         derivative_error = error - self.errors[-1]
