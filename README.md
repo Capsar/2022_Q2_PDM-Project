@@ -1,6 +1,7 @@
 ### <div align='center'> Planning & Decision Making - RO47005 <br/> 16-01-2023 </div>
 
 # <div align='center'> 2022_Q2_PDM-Project </div>
+### <div align='center'>Project about global and local path planning through an environment with obstacles. </div>
 
 ### <div align ='center'> Group 027:</div>
 #### <div align='center'>Annelouk van Mierlo: 4693746 </br> Caspar Meijer: 4719298 </br> Jurjen Scharringa: 4708652 </br> Marijn de Rijk: 4888871 </div>
@@ -54,28 +55,4 @@ TO change the standard environment into other pre-made environments change ```se
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment
 - ```"random"```: random obstacles added to environment
-
-
-
-
-
-
-
-TE DOEN:
-introductie -> wat het doet
-installatie -> git clonen + environment
-content -> beschrijving
-hoe te runnen
-
-
-
-Project about global and local path planning through an environment with random spherical obstacles.
-
-# Robot Morphology
-
-
-# Motion Planning
-## Global path planning: RRT*
-## Local path planning: []
-
 
