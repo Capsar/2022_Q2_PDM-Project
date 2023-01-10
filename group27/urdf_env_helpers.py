@@ -7,57 +7,71 @@ import time
 
 def add_obstacles(env, number=20, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
-    for i in range(number):
-        random_x = random.uniform(-1, 1) * scale
-        random_z = random.uniform(-1, 1) * scale
-        sphere_obst_dict = {
-            "type": "sphere",
-            'movable': False,
-            "geometry": {"position": [random_x, random_z, 0.0], "radius": 0.5},
-        }
-        sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
-        env.add_obstacle(sphere_obst)
+    # for i in range(number):
+    #     random_x = random.uniform(-1, 1) * scale
+    #     random_z = random.uniform(-1, 1) * scale
+    #     sphere_obst_dict = {
+    #         "type": "sphere",
+    #         'movable': False,
+    #         "geometry": {"position": [random_x, random_z, 0.0], "radius": 0.5},
+    #     }
+    #     sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
+    #     env.add_obstacle(sphere_obst)
 
-    for i in range(8):
-        sphere_obst_dict = {
-            "type": "sphere",
-            'movable': False,
-            "geometry": {"position": [-10 + i, -6, 0.0], "radius": 0.5},
-        }
-        sphere_obst = SphereObstacle(name=f'obstacle_{-10 + i}_{-6}', content_dict=sphere_obst_dict)
-        env.add_obstacle(sphere_obst)
+    def add_wall(begin_pos, end_pos, horizontal=True, radius=0.5):
+        if horizontal:
+            assert begin_pos[1] == end_pos[1]
+        else:
+            assert begin_pos[0] == end_pos[0]
 
-    for i in range(15):
-        sphere_obst_dict = {
-            "type": "sphere",
-            'movable': False,
-            "geometry": {"position": [-5 + i, -2.5, 0.0], "radius": 0.5},
-        }
-        sphere_obst = SphereObstacle(name=f'obstacle_{-5 + i}_{-2.5}', content_dict=sphere_obst_dict)
-        env.add_obstacle(sphere_obst)
+        if horizontal:
+            n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius*2)).astype(int))
+        else:
+            n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius*2)).astype(int))
+            print(n_spheres)
 
-        for i in range(7):
-            sphere_obst_dict = {
-                "type": "sphere",
-                'movable': False,
-                "geometry": {"position": [-5, -2.5 + i, 0.0], "radius": 0.5},
-            }
-            sphere_obst = SphereObstacle(name=f'obstacle_{-5}_{-2.5 + i}', content_dict=sphere_obst_dict)
-            env.add_obstacle(sphere_obst)
+        # add obstacles
+        for i in range(n_spheres):
+            if horizontal:
+                sphere_obst_dict = {
+                    "type": "sphere",
+                    'movable': False,
+                    "geometry": {"position": [begin_pos[0] + i, begin_pos[1], 0.0], "radius": radius},
+                }
+                sphere_obst = SphereObstacle(name=f'obstacle_{begin_pos[0] + i}_{begin_pos[1]}',
+                                             content_dict=sphere_obst_dict)
+                env.add_obstacle(sphere_obst)
 
-            # Adding walls as obstacles.
-    # wall_length = int(scale*2.5)
-    # for x in range(wall_length):
-    #     for y in range(wall_length):
-    #         if x != 0 and x != wall_length-1 and y != 0 and y != wall_length-1:
-    #             continue
-    #         sphere_obst_dict = {
-    #             "type": "sphere",
-    #             'movable': False,
-    #             "geometry": {"position": [x-int(wall_length/2), y-int(wall_length/2), 0.0], "radius": 0.5},
-    #         }
-    #         sphere_obst = SphereObstacle(name=f'obstacle_{x}_{y}', content_dict=sphere_obst_dict)
-    #         env.add_obstacle(sphere_obst)
+            else:
+                sphere_obst_dict = {
+                    "type": "sphere",
+                    'movable': False,
+                    "geometry": {"position": [begin_pos[0], begin_pos[1] + i, 0.0], "radius": radius},
+                }
+                sphere_obst = SphereObstacle(name=f'obstacle_{begin_pos[0]}_{begin_pos[1] + i}',
+                                             content_dict=sphere_obst_dict)
+                env.add_obstacle(sphere_obst)
+
+        # add covering wall
+        height = radius
+        if horizontal:
+            width = n_spheres - (radius * 2)
+            length = radius * 2
+            pos = [[(begin_pos[0]+end_pos[0])/2 - radius, (begin_pos[1]+end_pos[1])/2, 0]]
+        else:
+            width = radius * 2
+            length = n_spheres - (radius * 2)
+            pos = [[(begin_pos[0] + end_pos[0]) / 2, (begin_pos[1] + end_pos[1]) / 2 - radius, 0]]
+
+        size = [width, length, height]
+        env.add_shapes(shape_type="GEOM_BOX", dim=size, mass=0, poses_2d=pos)
+
+    add_wall([-10, -6], [-2, -6])
+    add_wall([-5, -2.5], [10, -2.5])
+    add_wall([-5, -2.5], [-5, 8.5], False)
+    add_wall([9, -8.5], [9, -1.5], False)
+
+    add_wall([-2, 5.5], [-2, 12.5], False)
 
     # adding a table from which to grab the goal
     table_height = 1
