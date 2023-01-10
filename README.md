@@ -50,7 +50,7 @@ If no errors have occurred, then the repository is correctly installed.
 
 ## Run guide
 To run the programm, simply run ```main.py```. This will run the simulation with the standard environment. 
-TO change the standard environment into other pre-made environments change ```setup=``` in LINEXXX into either:
+To change the standard environment into other pre-made environments change ```obstacle_setup=``` in ```main.py: line23 ``` into either:
 - ```1```: standard
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment

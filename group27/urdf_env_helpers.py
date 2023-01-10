@@ -5,18 +5,13 @@ import numpy as np
 import time
 
 
-def add_obstacles(env, number=20, scale=10.0):
+def add_obstacles(env, obstacle_setup=1, number=30, scale=10.0):
     from MotionPlanningEnv.sphereObstacle import SphereObstacle
-    # for i in range(number):
-    #     random_x = random.uniform(-1, 1) * scale
-    #     random_z = random.uniform(-1, 1) * scale
-    #     sphere_obst_dict = {
-    #         "type": "sphere",
-    #         'movable': False,
-    #         "geometry": {"position": [random_x, random_z, 0.0], "radius": 0.5},
-    #     }
-    #     sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
-    #     env.add_obstacle(sphere_obst)
+
+    if obstacle_setup not in {1, 2, 3, "random"}:
+        print(f"Obstacle setup: {obstacle_setup} is not in the given options [1, 2, 3, 'random']\n"
+              f"No obstacles added. ")
+        return
 
     def add_wall(begin_pos, end_pos, horizontal=True, radius=0.5):
         if horizontal:
@@ -66,12 +61,34 @@ def add_obstacles(env, number=20, scale=10.0):
         size = [width, length, height]
         env.add_shapes(shape_type="GEOM_BOX", dim=size, mass=0, poses_2d=pos)
 
-    add_wall([-10, -6], [-2, -6])
-    add_wall([-5, -2.5], [10, -2.5])
-    add_wall([-5, -2.5], [-5, 8.5], False)
-    add_wall([9, -8.5], [9, -1.5], False)
-
-    add_wall([-2, 5.5], [-2, 12.5], False)
+    if obstacle_setup == 1:
+        add_wall([-10, -6], [-2, -6])
+        add_wall([-5, -2.5], [10, -2.5])
+        add_wall([-5, -2.5], [-5, 8.5], False)
+        add_wall([9, -8.5], [9, -1.5], False)
+        add_wall([-2, 5.5], [-2, 12.5], False)
+    elif obstacle_setup == 2:
+        add_wall([-7, -10], [-7, 8], False)
+        add_wall([-7, 7], [5, 7])
+        add_wall([-2, 3], [5, 3])
+        add_wall([4, -3], [4, 4], False)
+        add_wall([-2, 1], [-2, 4], False)
+    elif obstacle_setup == 3:
+        add_wall([-5, -10], [-5, -7], False)
+        add_wall([-5, -5], [-5, 10], False)
+        add_wall([-5, -5], [-1, -5])
+        add_wall([-2, -2], [10, -2])
+    else:
+        for i in range(number):
+            random_x = random.uniform(-1, 1) * scale
+            random_z = random.uniform(-1, 1) * scale
+            sphere_obst_dict = {
+                "type": "sphere",
+                'movable': False,
+                "geometry": {"position": [random_x, random_z, 0.0], "radius": 0.5},
+            }
+            sphere_obst = SphereObstacle(name=f'obstacle_{i}', content_dict=sphere_obst_dict)
+            env.add_obstacle(sphere_obst)
 
     # adding a table from which to grab the goal
     table_height = 1
