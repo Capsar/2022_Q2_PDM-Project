@@ -13,9 +13,9 @@ import gym
 import networkx as nx
 from matplotlib import pyplot as plt
 
-from global_path_planning import CollisionManager, RRTStarSmart, path_length
+from global_path_planning import CollisionManager, RRTStarSmart
 from local_path_planning import follow_path, path_smoother, interpolate_path, PID_Base
-from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, add_obstacles_3D
+from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, add_obstacles_3D, draw_domain
 # from robot_arm_kinematics import Direct_Kinematics
 from arm_kinematics import RobotArmKinematics
 
@@ -34,7 +34,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, seed=42,
     # Init environment (robot position, obstacles, goals)
     # pos0 = np.array([-10.0, -10.0, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0])  # might change later
     pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, -0.286753, -0.40583808, 0.35806924, -0.82694153, 0.15506737,  0.24741826, -0.08700108])
-    pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, 0, 0, 0, 0, 0, 0, 0])
+    pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, 0, 0, 0, 0, 0, np.pi, 0])
 
     env.reset(pos=pos0)
     random.seed(seed)
@@ -45,7 +45,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, seed=42,
     if goal:
         add_goal(env, table_position=[0, 1, 0], albert_radius=albert_radius)
 
-    p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
+    # p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
 
     # Perform 1 random action to get the initial observation (containing obstacles & goal)
     action = np.random.random(env.n())
@@ -63,8 +63,9 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, seed=42,
     print('robot_config:', robot_config)
 
     # collision_manager = CollisionManager(obstacle_configs, albert_radius)
-    # domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}
-    #
+    domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}
+    draw_domain(domain, place_height=0.007)
+
     # rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, collision_manager, domain, seed=seed)
     # rrt_star_smart.smart_run(total_duration=10, rrt_factor=30, smart_sample_ratio=0.5, smart_radius=1)
     # shortest_path = nx.shortest_path(rrt_star_smart.graph, 0, -1, weight='weight')
@@ -98,17 +99,34 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=False, seed=42,
     #     if done:
     #         print("DONE")
 
-    transform_to_arm(ob)
+    # transform_to_arm(ob)
 
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
-    arm_base_position = robot_pos_config + np.array([0, 0, 0.8])
-    claw_position = robot_pos_config + np.array([0.05, 0, 1.4])   # change later!
+    arm_radius = 0.855
+    arm_height = 1.119
+    albert_height = 0.8
+    arm_base_position = robot_pos_config + np.array([0, 0, albert_height])
+    claw_position = robot_pos_config + np.array([0, 0, 2.0])
+    claw_goal_position = claw_position + np.array([0.8, -0.4, -0.9])
     p.addUserDebugPoints(
-        pointPositions=[arm_base_position, claw_position],
-        pointColorsRGB=[[1, 0, 0], [0, 1, 0]],
+        pointPositions=[arm_base_position, claw_position, claw_goal_position],
+        pointColorsRGB=[[1, 0, 0], [0, 0, 1], [0, 1, 0]],
         pointSize=5
         )
+    arm_collision_manager = CollisionManager([], 0.01)
+    arm_domain = {'xmin': robot_pos_config[0]-arm_radius, 'xmax': robot_pos_config[0]+arm_radius,
+              'ymin': robot_pos_config[1]-arm_radius, 'ymax': robot_pos_config[1]+arm_radius,
+              'zmin': albert_height, 'zmax': albert_height+arm_height}
+
+    draw_domain(arm_domain)
+
+    arm_rrt_star_smart = RRTStarSmart(claw_position, claw_goal_position, arm_collision_manager, arm_domain, seed=seed)
+    arm_rrt_star_smart.smart_run(total_duration=2, rrt_factor=3, smart_sample_ratio=0.0, smart_radius=0.0)
+    arm_shortest_path = nx.shortest_path(arm_rrt_star_smart.graph, 0, -1, weight='weight')
+    arm_shortest_path_configs = [arm_rrt_star_smart.graph.nodes[node]['config'] for node in arm_shortest_path]
+    draw_path(arm_shortest_path_configs, line_color=[0.3, 0.5, 0.1], place_height=0)
+
     #
     # add_obstacles_3D(env, location=base.return_position())
     #

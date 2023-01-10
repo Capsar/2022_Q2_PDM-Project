@@ -132,6 +132,18 @@ def add_graph_to_env(graph, place_height=0.005):
             lineWidth=line_width
         )
 
+def draw_domain(domain, line_color=[0,0,0], line_width=1):
+    path = [[domain['xmin'], domain['ymin'], domain['zmin']], [domain['xmin'], domain['ymax'], domain['zmin']],
+            [domain['xmax'], domain['ymax'], domain['zmin']], [domain['xmax'], domain['ymin'], domain['zmin']],
+            [domain['xmin'], domain['ymin'], domain['zmin']], [domain['xmin'], domain['ymin'], domain['zmax']],
+            [domain['xmin'], domain['ymax'], domain['zmax']], [domain['xmin'], domain['ymax'], domain['zmin']],
+            [domain['xmin'], domain['ymax'], domain['zmax']], [domain['xmax'], domain['ymax'], domain['zmax']],
+            [domain['xmax'], domain['ymax'], domain['zmin']], [domain['xmax'], domain['ymax'], domain['zmax']],
+            [domain['xmax'], domain['ymin'], domain['zmax']], [domain['xmax'], domain['ymin'], domain['zmin']],
+            [domain['xmax'], domain['ymin'], domain['zmax']], [domain['xmin'], domain['ymin'], domain['zmax']],
+            [domain['xmin'], domain['ymin'], domain['zmax']]]
+    draw_path(path, line_color=line_color, line_width=line_width, place_height=0)
+
 
 def draw_node_configs(node_configs, place_height=0.005, point_size=5):
     """ Draw the nodes in the graph. """
