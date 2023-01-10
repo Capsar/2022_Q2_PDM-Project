@@ -5,13 +5,8 @@ import numpy as np
 import networkx as nx
 
 
-def sample_config(domain, scale=1):
-    """
-    In final version this should be extended to whole observation / configuration space points.
-    Currently, it is only a 2D point in the x-y plane. Add a 0 for z (height).
-    """
-    return np.random.uniform([domain['xmin'], domain['ymin'], domain['zmin']],
-                             [domain['xmax'], domain['ymax'], domain['zmax']], size=3) * scale
+def path_length(configs):
+    return sum([distance(configs[i] - configs[i + 1]) for i in range(len(configs) - 1)])
 
 
 def distance(diff_config):
@@ -27,7 +22,7 @@ def steer(from_point, to_point, rrt_radius, step_size=0.1):
     direction_vector = to_point - from_point
     direction_length = distance(direction_vector)
     if direction_length > rrt_radius:
-        return (direction_vector / direction_length) * rrt_radius + to_point
+        return (direction_vector / direction_length) * rrt_radius + from_point
 
     return to_point
 
@@ -65,20 +60,25 @@ class CollisionManager:
         return True
 
 
-class RRTStarSmart:
+class RRTStar:
 
-    def __init__(self, start_config, goal_config, collision_manager: CollisionManager, domain):
+    def __init__(self, start_config, goal_config, collision_manager: CollisionManager, domain, seed=-1):
         self.start_config = start_config
         self.goal_config = goal_config
         self.collision_manager = collision_manager
         self.domain = domain
-        self.flat = False
-        if self.domain['zmin'] == 0 and self.domain['zmin'] == self.domain['zmax']:
-            self.flat = True
-
         self.graph = None
         self.beacon_nodes = None
         self.start_time = None
+        if seed != -1:
+            np.random.seed(seed)
+
+    def sample_config(self, domain, scale=1):
+        for _ in range(100): # Try 100 times to sample a valid config.
+            sampled_config = np.random.uniform([domain['xmin'], domain['ymin'], domain['zmin']],
+                                               [domain['xmax'], domain['ymax'], domain['zmax']], size=3) * scale
+            if not self.collision_manager.is_in_obstacle(sampled_config):
+                return sampled_config
 
     def parent(self, node_id):
         """
@@ -88,24 +88,6 @@ class RRTStarSmart:
 
     def node_config(self, node_id):
         return self.graph.nodes[node_id]['config']
-
-    def sample_biased_config(self, beacon_nodes, smart_radius):
-        random_node = np.random.choice(beacon_nodes[1:-1])
-        beacon_config = self.node_config(random_node)
-
-        x_min = max(-1, self.domain['xmin'] - beacon_config[0])
-        x_max = min(1, self.domain['xmax'] - beacon_config[0])
-        y_min = max(-1, self.domain['ymin'] - beacon_config[1])
-        y_max = min(1, self.domain['ymax'] - beacon_config[1])
-
-        if self.flat:
-            random_config = np.pad(np.random.uniform([x_min, y_min], [x_max, y_max], 2) * smart_radius, (0, 1))
-        else:
-            z_min = max(-1, self.domain['zmin'] - beacon_config[2])
-            z_max = min(1, self.domain['zmax'] - beacon_config[2])
-            random_config = np.random.uniform([x_min, y_min, z_min], [x_max, y_max, z_max], 3) * smart_radius
-
-        return beacon_config + random_config
 
     def distance_to_start(self, node, start=0):
         return nx.shortest_path_length(self.graph, source=start, target=node, weight='weight')
@@ -157,7 +139,7 @@ class RRTStarSmart:
         return min_node
 
     def rewire(self, near_nodes, new_config, new_node):
-        found = False
+        rewired_goal = False
         for near_node in near_nodes:
             near_node_config = self.node_config(near_node)
             if self.collision_manager.is_in_line_of_sight(near_node_config, new_config):
@@ -167,32 +149,15 @@ class RRTStarSmart:
                     self.graph.remove_edge(parent_node, near_node)
                     self.graph.add_edge(new_node, near_node, weight=distance(new_config - near_node_config))
                     if near_node == -1:
-                        found = True
-        return found
-
-    def optimize_path(self):
-        shortest_path = nx.shortest_path(self.graph, 0, -1, weight='weight')
-        beacon_nodes = shortest_path.copy()
-        while True and len(beacon_nodes) > 2:
-            found = False
-            for i in range(len(beacon_nodes) - 2):
-                node_0, node_1, node_2 = beacon_nodes[i], beacon_nodes[i + 1], beacon_nodes[i + 2]
-                config_0, config_1, config_2 = self.node_config(node_0), self.node_config(node_1), self.node_config(node_2)
-                if self.collision_manager.is_in_line_of_sight(config_0, config_2):
-                    beacon_nodes.pop(i + 1)
-                    found = True
-                    break
-
-            if not found:
-                break
-        return beacon_nodes
+                        rewired_goal = True
+        return rewired_goal
 
     def step(self, sampled_config, rrt_radius):
         nearest_node = self.find_nearest_node(sampled_config)  # This is a node id (so not a config)
         new_config = steer(self.node_config(nearest_node), sampled_config, rrt_radius)
 
         if self.collision_manager.is_in_obstacle(new_config):
-            return 'trapped'
+            return 'collision'
 
         if self.collision_manager.is_in_line_of_sight(new_config, self.node_config(nearest_node)):
             new_node = len(self.graph.nodes)
@@ -213,9 +178,9 @@ class RRTStarSmart:
             else:
                 return 'advanced'
         else:
-            return 'trapped'
+            return 'collision'
 
-    def run(self, total_duration, rrt_factor=40, init_rrt_star_frac=4, smart_radius=1, smart_frequency=1000):
+    def run(self, total_duration, rrt_factor=40):
         self.reset()
 
         self.graph.add_node(0, config=self.start_config)
@@ -223,19 +188,104 @@ class RRTStarSmart:
         self.graph.add_edge(0, -1, weight=101010)
         self.start_time = time.time()
 
-        initial_time = total_duration / init_rrt_star_frac
-        start_biased_sampling = False
-        beacon_nodes = None
         while time.time() - self.start_time < total_duration:
             n = len(self.graph.nodes)
             rrt_radius = rrt_factor * np.sqrt(np.log(n) / n)
-            if start_biased_sampling and time.time() - self.start_time > initial_time:
+            sampled_config = self.sample_config(self.domain)
+            self.step(sampled_config, rrt_radius=rrt_radius)
+
+
+class RRTStarSmart(RRTStar):
+
+    def __init__(self, robot_pos_config, goal_config, collision_manager, domain, seed):
+        super().__init__(robot_pos_config, goal_config, collision_manager, domain, seed)
+        self.biased_sampled_configs = []
+
+    def sample_biased_config(self, beacon_nodes, smart_radius):
+        random_node = np.random.choice(beacon_nodes[1:-1])
+        beacon_config = self.node_config(random_node)
+        domain = {
+            'xmin': max(beacon_config[0] - smart_radius, self.domain['xmin']),
+            'xmax': min(beacon_config[0] + smart_radius, self.domain['xmax']),
+            'ymin': max(beacon_config[1] - smart_radius, self.domain['ymin']),
+            'ymax': min(beacon_config[1] + smart_radius, self.domain['ymax']),
+            'zmin': max(beacon_config[2] - smart_radius, self.domain['zmin']),
+            'zmax': min(beacon_config[2] + smart_radius, self.domain['zmax'])
+        }
+        return self.sample_config(domain)
+
+    def optimize_path(self):
+        shortest_path = nx.shortest_path(self.graph, 0, -1, weight='weight')
+        beacon_nodes = shortest_path.copy()
+        while True and len(beacon_nodes) > 2:
+            found = False
+            for i in range(len(beacon_nodes) - 2):
+                node_0, node_1, node_2 = beacon_nodes[i], beacon_nodes[i + 1], beacon_nodes[i + 2]
+                config_0, config_1, config_2 = self.node_config(node_0), self.node_config(node_1), self.node_config(node_2)
+                if self.collision_manager.is_in_line_of_sight(config_0, config_2):
+                    beacon_nodes.pop(i + 1)
+                    found = True
+                    break
+
+            if not found:
+                break
+        return beacon_nodes
+
+    def optimize_graph(self):
+        shortest_path = nx.shortest_path(self.graph, 0, -1, weight='weight')
+        beacon_nodes = shortest_path.copy()
+        while True and len(beacon_nodes) > 2:
+            found = False
+            for i in range(len(beacon_nodes) - 2):
+                node_0, node_1, node_2 = beacon_nodes[i], beacon_nodes[i + 1], beacon_nodes[i + 2]
+                config_0, config_1, config_2 = self.node_config(node_0), self.node_config(node_1), self.node_config(node_2)
+                if self.collision_manager.is_in_line_of_sight(config_0, config_2):
+                    self.graph.remove_edge(node_1, node_2)
+                    self.graph.add_edge(node_0, node_2, weight=distance(config_0 - config_2))
+                    beacon_nodes.pop(i + 1)
+                    found = True
+                    break
+
+            if not found:
+                break
+        return beacon_nodes
+
+    def smart_run(self, total_duration, rrt_factor, smart_sample_ratio, smart_radius, smart_switch_time=0):
+        self.reset()
+
+        self.graph.add_node(0, config=self.start_config)
+        self.graph.add_node(-1, config=self.goal_config)
+        self.graph.add_edge(0, -1, weight=101010)
+        self.start_time = time.time()
+
+        start_biased_sampling = False
+        beacon_nodes, direct_cost = None, 101010
+        normal_sample_counter, smart_sample_counter = 1, 0
+        while time.time() - self.start_time < total_duration:
+            n = len(self.graph.nodes)
+            rrt_radius = rrt_factor * np.sqrt(np.log(n) / n)
+            if start_biased_sampling and time.time() - self.start_time > smart_switch_time \
+                    and float(smart_sample_counter / normal_sample_counter) < smart_sample_ratio:
                 sampled_config = self.sample_biased_config(beacon_nodes, smart_radius)
-                initial_time += total_duration / smart_frequency
+                self.biased_sampled_configs.append(sampled_config)
+                smart_sample_counter += 1
             else:
-                sampled_config = sample_config(self.domain)
+                sampled_config = self.sample_config(self.domain)
+                if start_biased_sampling:
+                    normal_sample_counter += 1
 
             status = self.step(sampled_config, rrt_radius=rrt_radius)
+            if status == 'trapped':
+                continue
+
             if status == 'goal_found':
-                beacon_nodes = self.optimize_path()
                 start_biased_sampling = True
+
+            if start_biased_sampling:
+                temp_beacon_nodes = self.optimize_graph()
+                direct_cost_new = path_length([self.node_config(node) for node in temp_beacon_nodes])
+                if direct_cost_new <= direct_cost:
+                    beacon_nodes = temp_beacon_nodes
+                    direct_cost = direct_cost_new
+                else:
+                    print('new direct cost not lower! {} vs {}'.format(direct_cost_new, direct_cost))
