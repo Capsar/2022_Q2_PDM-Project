@@ -42,7 +42,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
     pos0 = np.array([-10.0, -10.0, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0])  # might change later
     # pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, -0.286753, -0.40583808, 0.35806924, -0.82694153, 0.15506737,  0.24741826, -0.08700108])
     if at_end:
-        pos0 = np.hstack(([-10.0, -10.0, 0], kinematics.inital_pose))
+        pos0 = np.hstack(([0.0, 0.0, 0.0], kinematics.inital_pose))
 
     env.reset(pos=pos0)
     random.seed(seed)
@@ -58,7 +58,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
 
     # Perform 1 random action to get the initial observation (containing obstacles & goal)
     for step in range(100):
-        action = np.zeros(env.n())
+        action = np.zeros(9)
         ob, _, _, _ = env.step(action)
     action = np.zeros(env.n())
     ob, _, _, _ = env.step(action)
@@ -121,8 +121,8 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
     claw_goal_positions = [T_world_robot([0.3, 0.6, 0.3], robot_config), T_world_robot([-.5, 0.3, 0.3], robot_config), T_world_robot([-.5, -0.3, 0.3], robot_config)]
 
     p.addUserDebugPoints(
-        pointPositions=[*claw_goal_positions],
-        pointColorsRGB=[[1, 0, 1] for _ in claw_goal_positions],
+        pointPositions=[claw_end_position, *claw_goal_positions],
+        pointColorsRGB=[[1, 0, 0], *[[1, 0, 1] for _ in claw_goal_positions]],
         pointSize=5
     )
     arm_domain = {'xmin': robot_pos_config[0] - arm_radius, 'xmax': robot_pos_config[0] + arm_radius,

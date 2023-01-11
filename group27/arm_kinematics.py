@@ -21,7 +21,7 @@ class RobotArmKinematics:
             {'a':  0.0825, 'd': 0,     'alpha':  pi/2},
             {'a': -0.0825, 'd': 0.384, 'alpha': -pi/2},
             {'a':  0,      'd': 0,     'alpha':  pi/2},
-            {'a':  0.088,  'd': 0.187, 'alpha':  pi/2},
+            {'a':  0.088,  'd': 0.195, 'alpha':  pi/2},
         ]
 
         DK = eye(4)
