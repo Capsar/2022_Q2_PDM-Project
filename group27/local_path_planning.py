@@ -215,11 +215,9 @@ class PID_arm:
         if endpoint_orientation:
             goal_state = np.vstack([state[:9], goal.reshape(-1,1)])
         else:
-            # orientation =np.eye(3) @ rotate_Y(np.pi/2) @ rotate_X(np.pi)
-            angle = np.arctan(goal[1]/goal[0])
-            orientation = np.array([[0, -np.cos(angle), np.sin(angle)],
-                                    [0, np.sin(angle), np.cos(angle)],
-                                    [-1, 0, 0]]) #@ rotate_Y(np.pi)
+            orientation = np.array([[1, 0, 0],
+                                    [0, -1, 0], 
+                                    [0, 0, -1]])
             goal_state = np.vstack([orientation.reshape(-1, 1), goal.reshape(-1, 1)])
 
         error = goal_state - state

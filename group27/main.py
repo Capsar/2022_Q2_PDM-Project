@@ -1,3 +1,4 @@
+import imageio_ffmpeg
 import random
 import time
 import warnings
@@ -24,7 +25,7 @@ from arm_kinematics import RobotArmKinematics
 obstacle_setup = 1
 
 
-def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=True, seed=42, albert_radius=0.3):
+def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=True, seed=42, albert_radius=0.3, record_video=False):
     robots = [
         AlbertRobot(mode="vel"),
     ]
@@ -39,7 +40,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
     kinematics = RobotArmKinematics()
 
     # Init environment (robot position, obstacles, goals)
-    pos0 = np.array([-10.0, -10.0, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0])  # might change later
+    pos0 = np.hstack(([-10.0, -10.0, 0.0], kinematics.inital_pose))
     # pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, -0.286753, -0.40583808, 0.35806924, -0.82694153, 0.15506737,  0.24741826, -0.08700108])
     if at_end:
         pos0 = np.hstack(([0.0, 0.0, np.pi], kinematics.inital_pose))
@@ -55,6 +56,10 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
             add_goal(env, table_position=[0, 1, 0], albert_radius=albert_radius)
 
         p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
+
+    if record_video:
+        vid = imageio_ffmpeg.write_frames('vid.mp4', (cam_width, cam_height), fps=30)
+        vid.send(None) # seed the video writer with a blank frame
 
     # Perform 1 random action to get the initial observation (containing obstacles & goal)
     for step in range(100):
@@ -106,10 +111,13 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
                     break
             ob, _, done, _ = env.step(action)
             history.append(ob)
+            if record_video:
+                vid.send(np.ascontiguousarray(image))
+
             if done:
                 print("DONE")
 
-    # transform_to_arm(ob)
+    transform_to_arm(ob)
 
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
@@ -162,7 +170,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
                     break
 
             arm_goal_robot_frame = T_arm_world(arm_shortest_path_configs[0], robot_config)
-            joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=True)
+            joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=False)
             action = np.hstack((np.zeros(2), joint_vel))  # Action space is 9 dimensional
             ob, _, _, _ = env.step(action)
 
@@ -176,4 +184,4 @@ if __name__ == "__main__":
     warning_flag = "default" if show_warnings else "ignore"
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
-        run_albert()
+        run_albert(at_end=False)

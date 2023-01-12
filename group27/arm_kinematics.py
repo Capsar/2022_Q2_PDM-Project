@@ -2,7 +2,6 @@ from sympy import symbols, init_printing, Matrix, eye, sin, cos, pi
 init_printing(use_unicode=True)
 import numpy as np
 from sympy import lambdify
-from numba import jit
 
 
 class RobotArmKinematics:
