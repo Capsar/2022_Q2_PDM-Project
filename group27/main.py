@@ -14,7 +14,7 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 from global_path_planning import CollisionManager, RRTStarSmart, path_length
-from group27.transforms import T_robot_world, T_world_robot
+from transforms import * 
 from local_path_planning import follow_path, path_smoother, interpolate_path, PID_Base, PID_arm
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, add_obstacles_3D, draw_domain, \
     add_sphere
@@ -42,7 +42,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
     pos0 = np.array([-10.0, -10.0, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.0])  # might change later
     # pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, -0.286753, -0.40583808, 0.35806924, -0.82694153, 0.15506737,  0.24741826, -0.08700108])
     if at_end:
-        pos0 = np.hstack(([0.0, 0.0, 0.0], kinematics.inital_pose))
+        pos0 = np.hstack(([0.0, 0.0, np.pi], kinematics.inital_pose))
 
     env.reset(pos=pos0)
     random.seed(seed)
@@ -113,12 +113,12 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
 
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
-    claw_end_position = T_world_robot(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
+    claw_end_position = T_world_arm(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
 
     arm_radius = 0.855
     arm_height = 1.119
     albert_height = 0.8
-    claw_goal_positions = [T_world_robot([0.3, 0.6, 0.3], robot_config), T_world_robot([-.5, 0.3, 0.3], robot_config), T_world_robot([-.5, -0.3, 0.3], robot_config)]
+    claw_goal_positions = [T_world_arm([0.3, 0.6, 0.3], robot_config), T_world_arm([-.5, 0.3, 0.3], robot_config), T_world_arm([-.5, -0.3, 0.3], robot_config)]
 
     p.addUserDebugPoints(
         pointPositions=[claw_end_position, *claw_goal_positions],
@@ -134,7 +134,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
         x *= 0.08
         for y in range(15):
             y *= 0.08
-            obstacle_pos = T_world_robot([-1.2+x, 0, 0.1+y], robot_config)
+            obstacle_pos = T_world_arm([-1.2+x, 0, 0.1+y], robot_config)
             add_sphere(env, pos=obstacle_pos.tolist(), radius=0.08)
 
     action = np.random.random(env.n())
@@ -154,14 +154,14 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Tr
         for step in range(n_steps):
             joint_positions = ob['robot_0']['joint_state']['position'][3:]
             robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
-            arm_end_pos = T_world_robot(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
+            arm_end_pos = T_world_arm(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
 
             if np.linalg.norm(arm_end_pos - arm_shortest_path_configs[0]) < 0.05:
                 claw_end_position = arm_shortest_path_configs.pop(0)
                 if not arm_shortest_path_configs:
                     break
 
-            arm_goal_robot_frame = T_robot_world(arm_shortest_path_configs[0], robot_config)
+            arm_goal_robot_frame = T_arm_world(arm_shortest_path_configs[0], robot_config)
             joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=True)
             action = np.hstack((np.zeros(2), joint_vel))  # Action space is 9 dimensional
             ob, _, _, _ = env.step(action)

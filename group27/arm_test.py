@@ -9,7 +9,7 @@ import pybullet as p
 import gym
 import networkx as nx
 
-from transforms import get_T_world_robot, T_robot_world, T_world_robot
+from transforms import *
 from local_path_planning import follow_path, path_smoother,interpolate_path, PID_arm
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 from arm_kinematics import RobotArmKinematics
@@ -71,9 +71,18 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     for step in range(n_steps):
         joint_positions = ob['robot_0']['joint_state']['position'][3:]
         robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
-        arm_goal_robot_frame = T_robot_world(arm_goal, robot_config)
+        arm_goal_robot_frame = T_arm_world(arm_goal, robot_config)
 
-        p.addUserDebugPoints(pointPositions=[arm_goal, get_T_world_robot(robot_config, base_link_position=True)],
+        robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
+
+        # claw_end_position = T_world_arm(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
+        # p.addUserDebugPoints(
+        #     pointPositions=[claw_end_position, robot_pos_config],
+        #     pointColorsRGB=[[1, 0, 0], [0, 1, 0]],
+        #     pointSize=5
+        # )
+
+        p.addUserDebugPoints(pointPositions=[arm_goal, T_world_arm(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)],
                         pointColorsRGB = [[1,0,1], [1, 0, 0]],
                         pointSize = 10)
 
@@ -90,5 +99,5 @@ if __name__ == "__main__":
     warning_flag = "default" if show_warnings else "ignore"
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
-        run_albert(base_angle=1)
+        run_albert(base_angle=2)
 
