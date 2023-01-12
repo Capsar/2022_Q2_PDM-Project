@@ -15,7 +15,7 @@ from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_pat
 from arm_kinematics import RobotArmKinematics
 
 
-def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_radius=0.3):
+def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_radius=0.3, base_angle = 0):
     robots = [
         AlbertRobot(mode="vel"),
     ]
@@ -31,7 +31,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     kinematics = RobotArmKinematics()
 
     # Init environment (robot position, obstacles, goals)
-    pos0 = np.hstack((np.zeros(3), kinematics.inital_pose))
+    pos0 = np.hstack((np.array([0, 0, base_angle]), kinematics.inital_pose))
     env.reset(pos=pos0)
     if goal:
         add_goal(env, albert_radius=albert_radius)
@@ -59,7 +59,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
 
 
     arm_controller = PID_arm(kinematics)
-    arm_goal = np.array([-0.5, 0.5, 1.4
+    arm_goal = np.array([-0.5, -0.4, 1.0
                          ])
 
 
@@ -73,8 +73,8 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
         robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
         arm_goal_robot_frame = T_robot_world(arm_goal, robot_config)
 
-        p.addUserDebugPoints(pointPositions=[arm_goal],
-                        pointColorsRGB = [[1,0,1]],
+        p.addUserDebugPoints(pointPositions=[arm_goal, get_T_world_robot(robot_config, base_link_position=True)],
+                        pointColorsRGB = [[1,0,1], [1, 0, 0]],
                         pointSize = 10)
 
         joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=False)
@@ -90,5 +90,5 @@ if __name__ == "__main__":
     warning_flag = "default" if show_warnings else "ignore"
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
-        run_albert()
+        run_albert(base_angle=1)
 
