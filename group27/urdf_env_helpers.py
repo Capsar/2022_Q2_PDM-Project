@@ -25,7 +25,6 @@ def add_wall(env, begin_pos, end_pos, horizontal=True, radius=0.5):
         n_spheres = abs(np.round((end_pos[0] - begin_pos[0]) / (radius * 2)).astype(int))
     else:
         n_spheres = abs(np.round((end_pos[1] - begin_pos[1]) / (radius * 2)).astype(int))
-        print(n_spheres)
 
     # add obstacles
     for i in range(n_spheres):

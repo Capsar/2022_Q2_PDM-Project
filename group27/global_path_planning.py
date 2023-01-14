@@ -165,7 +165,7 @@ class RRTStar:
             near_nodes = self.find_near_nodes(new_config, rrt_radius)
             min_node = self.choose_parent(near_nodes, nearest_node, new_config)
 
-            self.graph.add_node(new_node, config=new_config, cost=self.distance_to_start(min_node) + distance(new_config - self.node_config(min_node)))
+            self.graph.add_node(new_node, config=new_config)
             self.graph.add_edge(min_node, new_node, weight=distance(new_config - self.node_config(min_node)))
 
             # Rewire
@@ -278,7 +278,7 @@ class RRTStarSmart(RRTStar):
                     normal_sample_counter += 1
 
             status = self.step(sampled_config, rrt_radius=rrt_radius)
-            if status == 'trapped':
+            if status == 'collision':
                 continue
 
             if status == 'goal_found':

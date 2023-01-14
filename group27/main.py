@@ -25,7 +25,7 @@ from arm_kinematics import RobotArmKinematics
 obstacle_setup = 1
 
 
-def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=True, seed=42, albert_radius=0.3, record_video=False):
+def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=False, seed=42, albert_radius=0.3):
     robots = [
         AlbertRobot(mode="vel"),
     ]
