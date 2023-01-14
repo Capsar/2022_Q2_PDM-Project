@@ -1,6 +1,8 @@
 import random
 import time
 import warnings
+import argparse
+from copy import deepcopy
 
 import gym
 import networkx as nx
@@ -15,8 +17,22 @@ from transforms import *
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, draw_domain, \
     add_sphere
 
-# change to 1, 2, 3 or "random" for obstacle setup in environment
-obstacle_setup = 3
+def check_env_type(value):
+    if value == "random":
+        return value
+    elif value in {"1", "2", "3"}:
+        return int(value)
+    else:
+        raise argparse.ArgumentTypeError("%s is an invalid environmnet.  Please select 1,2,3 or 'random'" % value)
+
+parser = argparse.ArgumentParser(description='This file runs the main simulation of the albert robot')
+parser.add_argument("--arm_only", help="set arm_only to skip the mobile base navigation part of the simulation, and see only the robot arm path following.", action=argparse.BooleanOptionalAction)
+parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=1, type=check_env_type)
+
+args = vars(parser.parse_args())
+
+obstacle_setup = args["environment"]
+arm_only = args["arm_only"]
 rrt_star_settings = [
     {
         'rrt_factor': 25,
@@ -69,7 +85,13 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
         # Set the camera to be in top view of the environment
         p.resetDebugVisualizerCamera(cameraDistance=12, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
 
-    # Perform no actions for couple of steps to spawn in the robot correctly (it starts in the air)
+        p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
+
+
+    # Perform 1 random action to get the initial observation (containing obstacles & goal)
+    for step in range(100):
+        action = np.zeros(9)
+        ob, _, _, _ = env.step(action)
     action = np.zeros(env.n())
     for step in range(30):
         ob, _, _, _ = env.step(action)
@@ -118,7 +140,10 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
                 action = base.pid_follow_path(ob)
                 if action == "DONE":
                     break
-            ob, _, _, _ = env.step(action)
+            ob, _, done, _ = env.step(action)
+            history.append(ob)
+            if done:
+                print("DONE")
 
     # Transform the camera to be close to the robot.
     transform_to_arm(ob)
@@ -192,4 +217,5 @@ if __name__ == "__main__":
     warning_flag = "default" if show_warnings else "ignore"
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
-        run_albert()
+        run_albert(at_end=arm_only)
+
