@@ -24,8 +24,8 @@ The repository consists of the following files with corresponding descriptions:
 - ```urdf_env_helpers.py```: helper file to add obstacles and goals to the urfd environment
 - ```global_path_planning.py```: to compute the path for <i>Albert</i> using RRT*Smart
 - ```local_path_planning.py```: to follow the path found
-- ```arm_kinematics.py```:
-- ```arm_test.py```:
+- ```arm_kinematics.py```: forward and inverse kinematics equations needed to control the robot arm
+- ``transformations.py``: contains functions to transform between global and robot coordinate frames
   
  
 ## Installation guide
@@ -41,18 +41,27 @@ Depending on the system that you are using follow the next steps.
 
 ### Windows
 - Install [Microsoft Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) for version 14.0
+- navigate to the folder in which you installed the repository: ``cd PATH\TO\REPOSITORY``
 - Create new conda environment: ```conda env create -f environment.yml```
 
 ### Linux
+- navigate to the folder in which you installed the repository: ``cd PATH/TO/REPOSITORY``
 - Create new conda environment: ```conda env create -f environment_linux.yml```
 
 If no errors have occurred, then the repository is correctly installed. 
 
 ## Run guide
-To run the programm, simply run ```main.py```. This will run the simulation with the standard environment. 
-To change the standard environment into other pre-made environments change ```obstacle_setup=``` in ```main.py: line23 ``` into either:
+The simulation can by running ``python3 main.py``.  Make sure you are within the "group27" folder for this to work.
+
+### Selecting environment
+The file includes an optional to change the simulation environment. Options are:
 - ```1```: standard
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment
 - ```"random"```: random obstacles added to environment
+To run the simulation in environment 3, for example, run ``python3 main.py --environment=3``.
+
+### Arm only
+There is also an option to skip the navigation of the mobile base and to look only at the robot arm path-following.  To do this, set the arm_only parameter as follows:
+``python3 main.py --arm_only``
 
