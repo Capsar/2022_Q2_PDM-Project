@@ -85,13 +85,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
         # Set the camera to be in top view of the environment
         p.resetDebugVisualizerCamera(cameraDistance=12, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
 
-        p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
-
-
     # Perform 1 random action to get the initial observation (containing obstacles & goal)
-    for step in range(100):
-        action = np.zeros(9)
-        ob, _, _, _ = env.step(action)
     action = np.zeros(env.n())
     for step in range(30):
         ob, _, _, _ = env.step(action)
@@ -140,10 +134,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
                 action = base.pid_follow_path(ob)
                 if action == "DONE":
                     break
-            ob, _, done, _ = env.step(action)
-            history.append(ob)
-            if done:
-                print("DONE")
+            ob, _, _, _ = env.step(action)
 
     # Transform the camera to be close to the robot.
     transform_to_arm(ob)
