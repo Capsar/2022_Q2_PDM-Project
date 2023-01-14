@@ -46,7 +46,7 @@ Depending on the system that you are using follow the next steps.
 
 ### Linux
 - navigate to the folder in which you installed the repository: ``cd PATH/TO/REPOSITORY``
-- Create new conda environment: ```conda env create -f environment_linux.yml```
+- Create new conda environment: ```conda env create -f environment_linux.yaml```
 
 If no errors have occurred, then the repository is correctly installed. 
 
