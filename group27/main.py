@@ -17,8 +17,22 @@ from transforms import *
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, draw_domain, \
     add_sphere
 
-# change to 1, 2, 3 or "random" for obstacle setup in environment
-obstacle_setup = 1
+def check_env_type(value):
+    if value == "random":
+        return value
+    elif value in {"1", "2", "3"}:
+        return int(value)
+    else:
+        raise argparse.ArgumentTypeError("%s is an invalid environmnet.  Please select 1,2,3 or 'random'" % value)
+
+parser = argparse.ArgumentParser(description='This file runs the main simulation of the albert robot')
+parser.add_argument("--arm_only", help="set arm_only to true to skip the mobile base navigation part of the simulation, and see only the robot arm path following.")
+parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=1, type=check_env_type)
+
+args = vars(parser.parse_args())
+
+obstacle_setup = args["environment"]
+arm_only = args["arm_only"]
 rrt_star_settings = [
     {
         'rrt_factor': 25,
@@ -204,3 +218,4 @@ if __name__ == "__main__":
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
         run_albert(at_end=arm_only)
+
