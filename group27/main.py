@@ -38,7 +38,7 @@ rrt_star_settings = [
         'rrt_factor': 25,
         'duration': 15,
         's_ratio': 1.2,
-        's_radius': 0.5ArgumentTypeError("%s is an invalid positive int value" % value)
+        's_radius': 0.5
     }, {
         'rrt_factor': 25,
         'duration': 20,
