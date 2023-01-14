@@ -23,7 +23,6 @@ def steer(from_point, to_point, rrt_radius, step_size=0.1):
     direction_length = distance(direction_vector)
     if direction_length > rrt_radius:
         return (direction_vector / direction_length) * rrt_radius + from_point
-
     return to_point
 
 
@@ -155,32 +154,30 @@ class RRTStar:
     def step(self, sampled_config, rrt_radius):
         nearest_node = self.find_nearest_node(sampled_config)  # This is a node id (so not a config)
         new_config = steer(self.node_config(nearest_node), sampled_config, rrt_radius)
-
         if self.collision_manager.is_in_obstacle(new_config):
             return 'collision'
 
-        if self.collision_manager.is_in_line_of_sight(new_config, self.node_config(nearest_node)):
-            new_node = len(self.graph.nodes)
-
-            near_nodes = self.find_near_nodes(new_config, rrt_radius)
-            min_node = self.choose_parent(near_nodes, nearest_node, new_config)
-
-            self.graph.add_node(new_node, config=new_config)
-            self.graph.add_edge(min_node, new_node, weight=distance(new_config - self.node_config(min_node)))
-
-            # Rewire
-            rewired_goal = self.rewire(near_nodes, new_config, new_node)
-
-            if (new_config == sampled_config).all():
-                if rewired_goal:
-                    return 'goal_found'
-                return 'reached'
-            else:
-                return 'advanced'
-        else:
+        if not self.collision_manager.is_in_line_of_sight(new_config, self.node_config(nearest_node)):
             return 'collision'
 
-    def run(self, total_duration, rrt_factor=40):
+        new_node = len(self.graph.nodes)
+        near_nodes = self.find_near_nodes(new_config, rrt_radius)
+        min_node = self.choose_parent(near_nodes, nearest_node, new_config)
+
+        self.graph.add_node(new_node, config=new_config)
+        self.graph.add_edge(min_node, new_node, weight=distance(new_config - self.node_config(min_node)))
+
+        # Rewire
+        rewired_goal = self.rewire(near_nodes, new_config, new_node)
+
+        if rewired_goal:
+            return 'goal_found'
+        if (new_config == sampled_config).all():
+            return 'reached'
+        else:
+            return 'advanced'
+
+    def run(self, total_duration, rrt_factor):
         self.reset()
 
         self.graph.add_node(0, config=self.start_config)

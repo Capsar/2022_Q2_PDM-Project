@@ -73,8 +73,11 @@ def plot_rrt_star_smart(rrt_star_smart_file):
 
 
 if __name__ == "__main__":
-    rrt_star_final = 'RRT-Star.csv'
-    plot_rrt_star(rrt_star_final)
+    # rrt_star_final = 'RRT-Star.csv'
+    # plot_rrt_star(rrt_star_final)
 
-    rrt_star_smart_1 = 'RRT-Star-Smart.csv'
-    plot_rrt_star_smart(rrt_star_smart_1)
+    rrt_star_smart = 'RRT-Star-Smart.csv'
+    plot_rrt_star_smart(rrt_star_smart)
+
+    rrt_star_smart = 'RRT-Star-Smart_Test.csv'
+    plot_rrt_star_smart(rrt_star_smart)

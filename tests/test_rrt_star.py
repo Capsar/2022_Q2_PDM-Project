@@ -61,18 +61,21 @@ def test_rrt_star(seed, albert_radius, seed_factor):
 def test_rrt_star_smart(seed, albert_radius, seed_factor):
     rrt_star_smart_settings = [
         {
+            'setup': 1,
             'n': 10,
             'rrt_factor': 25,
             'smart_ratio': [0.2, 0.4, 0.6, 0.8, 1.0, 1.2],
             'smart_radius': [0.5, 1.0],
             'duration': [2.5, 5, 7.5, 10, 12.5, 15, 17.5]
         }, {
+            'setup': 2,
             'n': 10,
             'rrt_factor': 25,
             'smart_ratio': [0.2, 0.4, 0.6, 0.8, 1.0, 1.2],
             'smart_radius': [0.5, 1.0],
             'duration': [5, 8, 11, 14, 17, 20, 23]
         }, {
+            'setup': 3,
             'n': 10,
             'rrt_factor': 20,
             'smart_ratio': [0.2, 0.4, 0.6, 0.8, 1.0, 1.2],
@@ -81,8 +84,8 @@ def test_rrt_star_smart(seed, albert_radius, seed_factor):
         }
     ]
 
-    for i, rrt_star_smart_setting in enumerate(rrt_star_smart_settings):
-        obstacle_setup = i + 1
+    for rrt_star_smart_setting in rrt_star_smart_settings:
+        obstacle_setup = rrt_star_smart_setting['setup']
         robot_config, goal_config, obstacle_configs, robot_pos_config = init_env(obstacle_setup, seed, albert_radius)
         collision_manager = CollisionManager(obstacle_configs, albert_radius)
         domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}

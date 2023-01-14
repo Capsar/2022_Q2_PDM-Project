@@ -16,7 +16,7 @@ from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_nod
     add_sphere
 
 # change to 1, 2, 3 or "random" for obstacle setup in environment
-obstacle_setup = 1
+obstacle_setup = 3
 rrt_star_settings = [
     {
         'rrt_factor': 25,
@@ -143,7 +143,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
 
     p.addUserDebugPoints(
         pointPositions=[claw_end_position, *claw_goal_positions],
-        pointColorsRGB=[[1, 0, 0], *[[1, 0, 1] for _ in claw_goal_positions]],
+        pointColorsRGB=[[1, 0, 0], *[[0, 1, 1] for _ in claw_goal_positions]],
         pointSize=5
     )
     arm_domain = {'xmin': robot_pos_config[0] - arm_radius, 'xmax': robot_pos_config[0] + arm_radius,
@@ -163,7 +163,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
         arm_shortest_path = nx.shortest_path(arm_rrt_star_smart.graph, 0, -1, weight='weight')
         arm_shortest_path_configs = [arm_rrt_star_smart.graph.nodes[node]['config'] for node in arm_shortest_path]
         draw_path(arm_shortest_path_configs, line_color=[0, 1, 0], place_height=0)
-        arm_interpolated_path_configs = interpolate_path(arm_shortest_path_configs, max_dist=0.1)
+        arm_interpolated_path_configs = interpolate_path(arm_shortest_path_configs, max_dist=0.05)
         arm_smooth_path_configs = path_smoother(arm_interpolated_path_configs)
         draw_path(arm_smooth_path_configs, line_color=[1, 0, 0], place_height=0.009)
 
