@@ -10,7 +10,7 @@ import gym
 import networkx as nx
 
 from transforms import *
-from local_path_planning import follow_path, path_smoother,interpolate_path, PID_arm
+from local_path_planning import follow_path, path_smoother,interpolate_path, PDArmController
 from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_path
 from arm_kinematics import RobotArmKinematics
 
@@ -58,7 +58,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, albert_ra
     print("Initial jacobian: ", jacobian) 
 
 
-    arm_controller = PID_arm(kinematics)
+    arm_controller = PDArmController(kinematics)
     arm_goal = np.array([-0.5, -0.4, 1.0
                          ])
 

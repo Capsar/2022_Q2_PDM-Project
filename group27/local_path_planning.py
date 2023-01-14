@@ -21,21 +21,26 @@ def interpolate_path(path, max_dist=5.0):
     This function interpolates points bet between nodes in case nodes are far apart
     """
     interpolated_path = []
-    for i in range(len(path)-1):
+    for i in range(len(path) - 1):
         x1 = path[i][0]
         y1 = path[i][1]
-        x2 = path[i+1][0]
-        y2 = path[i+1][1]
-        x_dist = x2-x1
-        y_dist = y2-y1
-        edge_length = np.sqrt(x_dist**2 + y_dist**2)
+        z1 = path[i][2]
+        x2 = path[i + 1][0]
+        y2 = path[i + 1][1]
+        z2 = path[i + 1][2]
+
+        x_dist = x2 - x1
+        y_dist = y2 - y1
+        z_dist = z2 - z1
+        edge_length = np.sqrt(x_dist ** 2 + y_dist ** 2 + z_dist ** 2)
         interpolated_path.append(path[i])
 
         if edge_length > max_dist:
             n_nodes = (edge_length // max_dist).astype(int)
             # print("interpolated nodes: ", n_nodes 
-            for i in range(n_nodes):
-                interpolated_path.append(np.array([x1+(i+1)*x_dist/(n_nodes+1), y1+(i+1)*y_dist/(n_nodes +1), 0]))
+            for ii in range(n_nodes):
+                interpolated_path.append(
+                    np.array([x1 + (ii + 1) * x_dist / (n_nodes + 1), y1 + (ii + 1) * y_dist / (n_nodes + 1), z1 + (ii + 1) * z_dist / (n_nodes + 1)]))
 
     interpolated_path.append(path[-1])
     return interpolated_path
@@ -44,15 +49,16 @@ def interpolate_path(path, max_dist=5.0):
 def path_smoother(shortest_path_configs):
     x = []
     y = []
+    z = []
 
     for point in shortest_path_configs:
         x.append(point[0])
         y.append(point[1])
-    tck, *rest = interpolate.splprep([x,y], s=0.1)
-    u = np.linspace(0,1,num=100)
-    x_smooth, y_smooth = interpolate.splev(u, tck) 
-
-    smooth_configs = [np.array([x_smooth[i], y_smooth[i], 0]) for i in range(len(x_smooth))]
+        z.append(point[2])
+    tck, *rest = interpolate.splprep([x, y, z], s=0.1)
+    u = np.linspace(0, 1, num=100)
+    x_smooth, y_smooth, z_smooth = interpolate.splev(u, tck)
+    smooth_configs = [np.array([x_smooth[i], y_smooth[i], z_smooth[i]]) for i in range(len(x_smooth))]
     return smooth_configs
 
 
@@ -69,11 +75,11 @@ def follow_path(ob, shortest_path_configs):
     angle_between = np.arctan2(first_node[1] - robot_config[1], first_node[0] - robot_config[0])
     angle_diff = angle_between - robot_config[2]
     if np.abs(angle_diff) > 0.1:
-        return np.array([0.5, 2*angle_diff, 0, 0, 0, 0, 0, 0, 0])
+        return np.array([0.5, 2 * angle_diff, 0, 0, 0, 0, 0, 0, 0])
     return np.array([0.5, 0, 0, 0, 0, 0, 0, 0, 0])
 
 
-class PID_Base:
+class PDBaseController:
     """"
     PID controller class for our base
     """
@@ -135,18 +141,18 @@ class PID_Base:
         control_angle = self.kp[1] * angle_diff + self.ki[1] * self.integral_error[1] + self.kd[1] * self.derivative_error[1]
 
         # calculate desired velocity based on the angle control
-        error = np.exp(abs(control_angle))**-1
+        error = np.exp(abs(control_angle)) ** -1
 
         self.integral_error[0] += error
         if len(self.angles["diff"]) > 1:
             # self.derivative_error[0] += error - min(1, 1 - self.angles["diff"][-1])
-            self.derivative_error[0] += error - np.exp(abs(self.angles["diff"][-1]))**-1
+            self.derivative_error[0] += error - np.exp(abs(self.angles["diff"][-1])) ** -1
         else:
             self.derivative_error[0] = 0
 
         control_velocity = error * self.kp[0] + self.integral_error[0] * self.ki[0] + self.derivative_error[0] * self.kd[0]
 
-        control_velocity = np.clip(control_velocity*self.max_velocity, .0, self.max_velocity)
+        control_velocity = np.clip(control_velocity * self.max_velocity, .0, self.max_velocity)
 
         self.velocities["control"].append(control_velocity)
         self.velocities["velocity"].append(get_robot_velocity(ob_current))
@@ -196,11 +202,12 @@ class PID_Base:
             fig.savefig(f"plots/full run = {title}.png")
 
 
-class PID_arm:
+class PDArmController:
     """
     PID for arm to follow path
     """
-    def __init__(self, arm_model, kp = 0.40, ki = 0.0, kd = 0.00):
+
+    def __init__(self, arm_model, kp=1.8, ki=0, kd=0):
         self.arm_model = arm_model
         self.kp = kp
         self.ki = ki
@@ -213,10 +220,10 @@ class PID_arm:
         state = self.arm_model.FK(joint_positions)
 
         if endpoint_orientation:
-            goal_state = np.vstack([state[:9], goal.reshape(-1,1)])
+            goal_state = np.vstack([state[:9], goal.reshape(-1, 1)])
         else:
             orientation = np.array([[1, 0, 0],
-                                    [0, -1, 0], 
+                                    [0, -1, 0],
                                     [0, 0, -1]])
             goal_state = np.vstack([orientation.reshape(-1, 1), goal.reshape(-1, 1)])
 
@@ -228,23 +235,7 @@ class PID_arm:
 
         endpoint_vel = self.kp * error + self.ki * self.integral_error + self.kd * derivative_error
 
-
-
-        joint_vel = np.linalg.pinv(J) @ endpoint_vel 
+        joint_vel = np.linalg.pinv(J) @ endpoint_vel
         joint_vel = np.clip(joint_vel, -self.arm_model.max_joint_speed, self.arm_model.max_joint_speed)
 
         return joint_vel.flatten()
-
-
-
-
-
-
-
-        
-
-
-
-
-
-

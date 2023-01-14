@@ -221,13 +221,13 @@ def transform_camera(dist, yaw, pitch, target, t=1, dt=0.01):
         time.sleep(dt)
 
 
-def transform_to_arm(ob, dist=6, pitch=-60):
+def transform_to_arm(ob, dist=3.5, orientation_offset=50, pitch=-64):
     """"
     Specific transformation function that transforms the camera
     Takes ob as input
     """
 
     goal_target = np.pad(ob['robot_0']['joint_state']['position'][0:2], (0, 1))
-    orientation = math.degrees(ob['robot_0']['joint_state']['position'][2])
+    orientation = math.degrees(ob['robot_0']['joint_state']['position'][2]) + orientation_offset
 
     transform_camera(dist, orientation, pitch, goal_target)

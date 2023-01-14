@@ -1,28 +1,40 @@
-import imageio_ffmpeg
 import random
 import time
 import warnings
-import math
-from copy import deepcopy
 
-from networkx import DiGraph
-from urdfenvs.robots.albert import AlbertRobot
-from urdfenvs.sensors.full_sensor import FullSensor
-import numpy as np
-import pybullet as p
 import gym
 import networkx as nx
-from matplotlib import pyplot as plt
+import pybullet as p
+from urdfenvs.robots.albert import AlbertRobot
+from urdfenvs.sensors.full_sensor import FullSensor
 
-from global_path_planning import CollisionManager, RRTStarSmart, path_length
-from transforms import * 
-from local_path_planning import follow_path, path_smoother, interpolate_path, PID_Base, PID_arm
-from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, add_obstacles_3D, draw_domain, \
-    add_sphere
 from arm_kinematics import RobotArmKinematics
+from global_path_planning import CollisionManager, RRTStarSmart, path_length
+from local_path_planning import follow_path, path_smoother, interpolate_path, PDBaseController, PDArmController
+from transforms import *
+from urdf_env_helpers import add_obstacles, add_goal, add_graph_to_env, draw_node_configs, draw_path, transform_to_arm, draw_domain, \
+    add_sphere
 
 # change to 1, 2, 3 or "random" for obstacle setup in environment
 obstacle_setup = 1
+rrt_star_settings = [
+    {
+        'rrt_factor': 25,
+        'duration': 15,
+        's_ratio': 1.2,
+        's_radius': 0.5
+    }, {
+        'rrt_factor': 25,
+        'duration': 20,
+        's_ratio': 0.2,
+        's_radius': 1.0
+    }, {
+        'rrt_factor': 20,
+        'duration': 10,
+        's_ratio': 0.8,
+        's_radius': 1.0
+    }
+]
 
 
 def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=False, seed=42, albert_radius=0.3):
@@ -31,17 +43,16 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
     ]
     sensor = FullSensor(goal_mask=['position', 'radius'], obstacle_mask=['position', 'radius'])
     robots[0].add_sensor(sensor)
-
     env = gym.make(
         "urdf-env-v0",
         dt=0.01, robots=robots, render=render
     )
 
+    # Init the robot arm kinematics.
     kinematics = RobotArmKinematics()
 
     # Init environment (robot position, obstacles, goals)
     pos0 = np.hstack(([-10.0, -10.0, 0.0], kinematics.inital_pose))
-    # pos0 = np.array([-0.02934186, 1.09177044, -1.01096624, -0.286753, -0.40583808, 0.35806924, -0.82694153, 0.15506737,  0.24741826, -0.08700108])
     if at_end:
         pos0 = np.hstack(([0.0, 0.0, np.pi], kinematics.inital_pose))
 
@@ -49,25 +60,20 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
     random.seed(seed)
     np.random.seed(seed)
 
+    # If not to only run the 3D environment, add obstacles and goals to entire environment
     if not at_end:
         if obstacles:
             add_obstacles(env, obstacle_setup)
         if goal:
             add_goal(env, table_position=[0, 1, 0], albert_radius=albert_radius)
+        # Set the camera to be in top view of the environment
+        p.resetDebugVisualizerCamera(cameraDistance=12, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
 
-        p.resetDebugVisualizerCamera(cameraDistance=16, cameraYaw=0, cameraPitch=-89.99, cameraTargetPosition=[0, 0, 0])
-
-    if record_video:
-        vid = imageio_ffmpeg.write_frames('vid.mp4', (cam_width, cam_height), fps=30)
-        vid.send(None) # seed the video writer with a blank frame
-
-    # Perform 1 random action to get the initial observation (containing obstacles & goal)
-    for step in range(100):
-        action = np.zeros(9)
-        ob, _, _, _ = env.step(action)
+    # Perform no actions for couple of steps to spawn in the robot correctly (it starts in the air)
     action = np.zeros(env.n())
+    for step in range(30):
+        ob, _, _, _ = env.step(action)
     ob, _, _, _ = env.step(action)
-
     print(f"Initial observation : {ob['robot_0']}")  # This now contains the obstacles and goal (env.reset(pos=pos0) did not)
 
     if not at_end:
@@ -85,39 +91,46 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
         domain = {'xmin': -10, 'xmax': 10, 'ymin': -10, 'ymax': 10, 'zmin': 0, 'zmax': 0}
         draw_domain(domain, place_height=0.007)
 
+        # Initialize RRT*-Smart and run the algorithm with optimized settings.
         rrt_star_smart = RRTStarSmart(robot_pos_config, goal_config, collision_manager, domain, seed=seed)
-        rrt_star_smart.smart_run(total_duration=10, rrt_factor=30, smart_sample_ratio=0.5, smart_radius=1)
+        rrt_star_smart_settings = rrt_star_settings[obstacle_setup - 1]
+        rrt_star_smart.smart_run(total_duration=rrt_star_smart_settings['duration'], rrt_factor=rrt_star_smart_settings['rrt_factor'],
+                                 smart_sample_ratio=rrt_star_smart_settings['s_ratio'], smart_radius=rrt_star_smart_settings['s_radius'])
         shortest_path = nx.shortest_path(rrt_star_smart.graph, 0, -1, weight='weight')
         shortest_path_configs = [rrt_star_smart.graph.nodes[node]['config'] for node in shortest_path]
-
         add_graph_to_env(rrt_star_smart.graph, 0.005)
         draw_node_configs(rrt_star_smart.biased_sampled_configs, 0.005)
         draw_path(shortest_path_configs, place_height=0.007)
         print("Shortest path length: ", path_length(shortest_path_configs))
-        #
-        interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.5)
+
+        # Smooth the path by interpolating and smoothing.
+        interpolated_path_configs = interpolate_path(shortest_path_configs, max_dist=2.0)
         smooth_path_configs = path_smoother(interpolated_path_configs)
         draw_path(smooth_path_configs, line_color=[1, 0, 0], place_height=0.009)
         print("Smooth path length: ", path_length(smooth_path_configs))
 
-        base = PID_Base(ob, smooth_path_configs)
-        history = []
+        # Init the controller for the base and start following the path.
+        base = PDBaseController(ob, smooth_path_configs)
         for step in range(n_steps):
-            if not history:
+            if step == 0:
                 action = follow_path(ob, smooth_path_configs)  # Action space is 9 dimensional
             else:
                 action = base.pid_follow_path(ob)
                 if action == "DONE":
                     break
-            ob, _, done, _ = env.step(action)
-            history.append(ob)
-            if record_video:
-                vid.send(np.ascontiguousarray(image))
+            ob, _, _, _ = env.step(action)
 
-            if done:
-                print("DONE")
-
+    # Transform the camera to be close to the robot.
     transform_to_arm(ob)
+
+    # Add obstacles to the arm domain
+    robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
+    for x in range(10):
+        x *= 0.08
+        for y in range(15):
+            y *= 0.08
+            obstacle_pos = T_world_arm([-1.2 + x, 0, 0.1 + y], robot_config)
+            add_sphere(env, pos=obstacle_pos.tolist(), radius=0.08)
 
     robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
     robot_pos_config = np.pad(robot_config[0][0:2], (0, 1))  # (x, y, 0)
@@ -138,45 +151,40 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
                   'zmin': albert_height, 'zmax': albert_height + arm_height}
     draw_domain(arm_domain)
 
-    for x in range(10):
-        x *= 0.08
-        for y in range(15):
-            y *= 0.08
-            obstacle_pos = T_world_arm([-1.2+x, 0, 0.1+y], robot_config)
-            add_sphere(env, pos=obstacle_pos.tolist(), radius=0.08)
-
     action = np.random.random(env.n())
     ob, _, _, _ = env.step(action)
     print(f"Initial observation : {ob['robot_0']}")  # This now contains the obstacles and goal (env.reset(pos=pos0) did not)
     obstacle_configs = [obstacle_config for obstacle_config in ob['robot_0']['obstacles']]
-    arm_collision_manager = CollisionManager(obstacle_configs, 0.15)
+    arm_collision_manager = CollisionManager(obstacle_configs, 0.14)
 
     for claw_goal_position in claw_goal_positions:
         arm_rrt_star_smart = RRTStarSmart(claw_end_position, claw_goal_position, arm_collision_manager, arm_domain, seed=seed)
-        arm_rrt_star_smart.smart_run(total_duration=2, rrt_factor=1.5, smart_sample_ratio=0.1, smart_radius=0.1)
+        arm_rrt_star_smart.smart_run(total_duration=4, rrt_factor=3, smart_sample_ratio=0.2, smart_radius=0.1)
         arm_shortest_path = nx.shortest_path(arm_rrt_star_smart.graph, 0, -1, weight='weight')
         arm_shortest_path_configs = [arm_rrt_star_smart.graph.nodes[node]['config'] for node in arm_shortest_path]
-        draw_path(arm_shortest_path_configs, line_color=[0.3, 0.5, 0.1], place_height=0)
+        draw_path(arm_shortest_path_configs, line_color=[0, 1, 0], place_height=0)
+        arm_interpolated_path_configs = interpolate_path(arm_shortest_path_configs, max_dist=0.1)
+        arm_smooth_path_configs = path_smoother(arm_interpolated_path_configs)
+        draw_path(arm_smooth_path_configs, line_color=[1, 0, 0], place_height=0.009)
 
-        arm_controller = PID_arm(kinematics)
+        arm_controller = PDArmController(kinematics)
         for step in range(n_steps):
             joint_positions = ob['robot_0']['joint_state']['position'][3:]
             robot_config = [ob['robot_0']['joint_state']['position'], albert_radius]
             arm_end_pos = T_world_arm(kinematics.FK(robot_config[0][3:], xyz=True), robot_config)
 
-            if np.linalg.norm(arm_end_pos - arm_shortest_path_configs[0]) < 0.05:
-                claw_end_position = arm_shortest_path_configs.pop(0)
-                if not arm_shortest_path_configs:
+            if np.linalg.norm(arm_end_pos - arm_smooth_path_configs[0]) < 0.05:
+                claw_end_position = arm_smooth_path_configs.pop(0)
+                if not arm_smooth_path_configs:
                     break
 
-            arm_goal_robot_frame = T_arm_world(arm_shortest_path_configs[0], robot_config)
+            arm_goal_robot_frame = T_arm_world(arm_smooth_path_configs[0], robot_config)
             joint_vel = arm_controller.PID(arm_goal_robot_frame, joint_positions, endpoint_orientation=False)
             action = np.hstack((np.zeros(2), joint_vel))  # Action space is 9 dimensional
             ob, _, _, _ = env.step(action)
 
     time.sleep(300)
     env.close()
-    return history
 
 
 if __name__ == "__main__":
@@ -184,4 +192,4 @@ if __name__ == "__main__":
     warning_flag = "default" if show_warnings else "ignore"
     with warnings.catch_warnings():
         warnings.filterwarnings(warning_flag)
-        run_albert(at_end=False)
+        run_albert()
