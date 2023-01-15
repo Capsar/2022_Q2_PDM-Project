@@ -59,7 +59,7 @@ The file includes an optional to change the simulation environment. Options are:
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment
 - ```"random"```: random obstacles added to environment
-- 
+
 To run the simulation in environment 3, for example, run ``python3 main.py --environment=3``.
 
 ### Arm only
