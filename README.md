@@ -42,7 +42,7 @@ Depending on the system that you are using follow the next steps.
 ### Windows
 - Install [Microsoft Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) for version 14.0
 - navigate to the folder in which you installed the repository: ``cd PATH\TO\REPOSITORY``
-- Create new conda environment: ```conda env create --name PDM_group27 -f environment.yml```
+- Create new conda environment: ```conda env create -f environment_win.yml```
 
 ### Linux
 - navigate to the folder in which you installed the repository: ``cd PATH/TO/REPOSITORY``
@@ -60,7 +60,6 @@ Multiple simulation environments for the robot to navigate are provided. Options
 - ```1```: standard
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment
-- ```"random"```: random obstacles added to environment
 
 Environmnets can be chosen by setting the ```--environment``` argument.  To run the simulation in environment 3, for example, run ``python3 main.py --environment=3``.
 
