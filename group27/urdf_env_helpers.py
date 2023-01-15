@@ -150,6 +150,7 @@ def add_graph_to_env(graph, place_height=0.005):
             lineColorRGB=line_color,
             lineWidth=line_width
         )
+        time.sleep(0.001)
 
 
 def draw_domain(domain, line_color=[0, 0, 0], line_width=1, place_height=0):

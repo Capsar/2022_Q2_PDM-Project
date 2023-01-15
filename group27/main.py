@@ -27,7 +27,7 @@ def check_env_type(value):
 
 parser = argparse.ArgumentParser(description='This file runs the main simulation of the albert robot')
 parser.add_argument("--arm_only", help="set arm_only to skip the mobile base navigation part of the simulation, and see only the robot arm path following.", action=argparse.BooleanOptionalAction)
-parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=2, type=check_env_type)
+parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=1, type=check_env_type)
 
 args = vars(parser.parse_args())
 
