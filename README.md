@@ -42,25 +42,27 @@ Depending on the system that you are using follow the next steps.
 ### Windows
 - Install [Microsoft Build Tools](https://visualstudio.microsoft.com/downloads/?q=build+tools) for version 14.0
 - navigate to the folder in which you installed the repository: ``cd PATH\TO\REPOSITORY``
-- Create new conda environment: ```conda env create -f environment.yml```
+- Create new conda environment: ```conda env create --name PDM_group27 -f environment.yml```
 
 ### Linux
 - navigate to the folder in which you installed the repository: ``cd PATH/TO/REPOSITORY``
-- Create new conda environment: ```conda env create -f environment_linux.yaml```
+- Create new conda environment: ```conda env create --name PDM_group27 -f environment_linux.yaml```
+- Activate the new conda environment ```conda activate PDM_group27```
+- Install newest version of ```netoworkx```: ```conda install networkx```
 
 If no errors have occurred, then the repository is correctly installed. 
 
 ## Run guide
-The simulation can by running ``python3 main.py``.  Make sure you are within the "group27" folder for this to work.
+The simulation can by running ``python3 main.py``.  Make sure you are within the "group27" folder, and that the ```PDM_group27``` conda environment is activated.
 
 ### Selecting environment
-The file includes an optional to change the simulation environment. Options are:
+Multiple simulation environments for the robot to navigate are provided. Options are:
 - ```1```: standard
 - ```2```: second pre-made environment
 - ```3```: third pre-made environment
 - ```"random"```: random obstacles added to environment
-- 
-To run the simulation in environment 3, for example, run ``python3 main.py --environment=3``.
+
+Environmnets can be chosen by setting the ```--environment``` argument.  To run the simulation in environment 3, for example, run ``python3 main.py --environment=3``.
 
 ### Arm only
 There is also an option to skip the navigation of the mobile base and to look only at the robot arm path-following.  To do this, set the arm_only parameter as follows:

@@ -1,4 +1,4 @@
-name: PDM_project
+name: PDM_group27
 channels:
   - defaults
 dependencies:
@@ -17,7 +17,7 @@ dependencies:
   - bottleneck=1.3.5=py39h7deecbd_0
   - brotlipy=0.7.0=py39h27cfd23_1003
   - ca-certificates=2022.10.11=h06a4308_0
-  - certifi=2022.9.24=py39h06a4308_0
+  - certifi=2022.12.7=py39h06a4308_0
   - cffi=1.15.1=py39h74dc2b5_0
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - cryptography=38.0.1=py39h9ce1e76_0
@@ -108,7 +108,8 @@ dependencies:
   - nss=3.74=h0370c37_0
   - numba=0.56.4=py39h417a72b_0
   - numexpr=2.8.4=py39he184ba9_0
-  - numpy-base=1.23.4=py39h31eccc5_0
+  - numpy=1.23.5=py39h14f4228_0
+  - numpy-base=1.23.5=py39h31eccc5_0
   - openssl=1.1.1s=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.5.1=py39h417a72b_0
@@ -195,7 +196,6 @@ dependencies:
       - matplotlib==3.6.2
       - motion-planning-scenes==0.3.5
       - networkx==2.2
-      - numpy==1.23.5
       - omegaconf==2.2.3
       - pillow==9.3.0
       - pluggy==1.0.0
@@ -216,4 +216,4 @@ dependencies:
       - trimesh==3.16.4
       - urdfenvs==0.4.0
       - urdfpy==0.0.22
-prefix: /home/marijn/miniconda3/envs/PDM_project
+prefix: /home/marijn/miniconda3/envs/PDM_group27
