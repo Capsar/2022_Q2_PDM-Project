@@ -207,7 +207,7 @@ class PDArmController:
     PID for arm to follow path
     """
 
-    def __init__(self, arm_model, kp=1.8, ki=0, kd=0):
+    def __init__(self, arm_model, kp=2.0, ki=0, kd=0):
         self.arm_model = arm_model
         self.kp = kp
         self.ki = ki

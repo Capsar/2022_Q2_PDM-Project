@@ -27,7 +27,7 @@ def check_env_type(value):
 
 parser = argparse.ArgumentParser(description='This file runs the main simulation of the albert robot')
 parser.add_argument("--arm_only", help="set arm_only to skip the mobile base navigation part of the simulation, and see only the robot arm path following.", action=argparse.BooleanOptionalAction)
-parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=1, type=check_env_type)
+parser.add_argument("--environment", help="select the simulation environment (1,2,3 or 'random')", default=2, type=check_env_type)
 
 args = vars(parser.parse_args())
 
@@ -179,7 +179,7 @@ def run_albert(n_steps=500000, render=True, goal=True, obstacles=True, at_end=Fa
         arm_shortest_path = nx.shortest_path(arm_rrt_star_smart.graph, 0, -1, weight='weight')
         arm_shortest_path_configs = [arm_rrt_star_smart.graph.nodes[node]['config'] for node in arm_shortest_path]
         draw_path(arm_shortest_path_configs, line_color=[0, 1, 0], place_height=0)
-        arm_interpolated_path_configs = interpolate_path(arm_shortest_path_configs, max_dist=0.05)
+        arm_interpolated_path_configs = interpolate_path(arm_shortest_path_configs, max_dist=0.06)
         arm_smooth_path_configs = path_smoother(arm_interpolated_path_configs)
         draw_path(arm_smooth_path_configs, line_color=[1, 0, 0], place_height=0.009)
 
