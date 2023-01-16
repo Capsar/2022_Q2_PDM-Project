@@ -6,10 +6,10 @@
 ### <div align ='center'> Group 027:</div>
 #### <div align='center'>Annelouk van Mierlo: 4693746 </br> Caspar Meijer: 4719298 </br> Jurjen Scharringa: 4708652 </br> Marijn de Rijk: 4888871 </div>
 
-<div> This project is made for the group assignment of the course RO47005 at the TU Delft. 
+This project is made for the group assignment of the course RO47005 at the TU Delft. 
 The aim for this project is to implement motion planning algorithms for a mobile manipulator, allowing it to navigate through a simulated environment and perform an action with the robot arm.
 The mobile manipulator that is used is the <i>Albert Robot</i>, provided in [Max Spahn's package](https://github.com/maxspahn/gym_envs_urdf).
-</div>
+
 
 This file will contain the following contents:
 - Content description
