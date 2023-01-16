@@ -44,13 +44,13 @@ Depending on the system that you are using follow the next steps.
 - navigate to the folder in which you installed the repository: ``cd PATH\TO\REPOSITORY``
 - Create new conda environment: ```conda env create -f environment_win.yml```
 - Activate the new conda environment ```conda activate PDM_group27```
-- Install newest version of ```networkx```: ```conda install networkx==2.8.8```
+- Install newer version of ```networkx```: ```conda install networkx==2.8.8```
 
 ### Linux
 - navigate to the folder in which you installed the repository: ``cd PATH/TO/REPOSITORY``
 - Create new conda environment: ```conda env create --name PDM_group27 -f environment_linux.yaml```
 - Activate the new conda environment ```conda activate PDM_group27```
-- Install newest version of ```networkx```: ```conda install networkx==2.8.8```
+- Install newer version of ```networkx```: ```conda install networkx==2.8.8```
 
 The manual installment of ```networkx``` is required because ```urdfpy``` has a restriction on the ```networkx``` version. We are not aware of any complications using the newer version of ```networkx``` in regards with ```urdfpy```.
 If no errors have occurred, then the repository is correctly installed. 
