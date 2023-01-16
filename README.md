@@ -72,9 +72,8 @@ There is also an option to skip the navigation of the mobile base and to look on
 ``python3 main.py --arm_only``
 
 ### Environment & Path pictures
-<img src="file:///env_pictures/env1.png" alt="Environment 1" width="300"/>
-<img src="file:///env_pictures/env2.png" alt="Environment 2" width="315"/>
-<img src="file:///env_pictures/env3.png" alt="Environment 3" width="300"/>
-<img src="file:///env_pictures/Arm_path_result.png" alt="3D Arm Path" width="330"/>
 
-
+[<img src="env_pictures/env1.png" alt="Environment 1" width="300"/>](https://github.com/Capsar/2022_Q2_PDM-Project/blob/main/env_pictures/env1.png)
+[<img src="env_pictures/env2.png" alt="Environment 2" width="315"/>](https://github.com/Capsar/2022_Q2_PDM-Project/blob/main/env_pictures/env2.png)
+[<img src="env_pictures/env3.png" alt="Environment 3" width="300"/>](https://github.com/Capsar/2022_Q2_PDM-Project/blob/main/env_pictures/env3.png)
+[<img src="env_pictures/Arm_path_result.png" alt="3D Arm Path" width="330"/>](https://github.com/Capsar/2022_Q2_PDM-Project/blob/main/env_pictures/Arm_path_result.png)
